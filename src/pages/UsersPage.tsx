@@ -172,7 +172,11 @@ export const UsersPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
-                      {user.role === 'ADMIN' ? '-' : (customers.find(c => c.id === user.customerId)?.name || 'Não vinculado')}
+                      {user.role === 'ADMIN' ? '-' : (
+                        user.role === 'GESTOR' 
+                          ? (customers.filter(c => c.responsibleAdminId === user.id).map(c => c.name).join(', ') || 'Não vinculado')
+                          : (customers.find(c => c.id === user.customerId)?.name || 'Não vinculado')
+                      )}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">

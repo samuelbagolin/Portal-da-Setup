@@ -1,16 +1,24 @@
 import React, { useState } from 'react';
 import { setDoc, doc } from 'firebase/firestore';
+import { updatePassword } from 'firebase/auth';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { UserCircle, Camera, Loader2, Save } from 'lucide-react';
+import { UserCircle, Camera, Loader2, Save, Lock, Key } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export const ProfilePage: React.FC = () => {
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const [name, setName] = useState(profile?.name || '');
   const [photoUrl, setPhotoUrl] = useState(profile?.photoUrl || '');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  // Password change state
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,6 +45,40 @@ export const ProfilePage: React.FC = () => {
       alert('Erro ao atualizar perfil.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    if (newPassword !== confirmPassword) {
+      setPasswordError('As senhas não coincidem.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      setPasswordError('A senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+
+    setPasswordLoading(true);
+    setPasswordError('');
+    setPasswordSuccess(false);
+
+    try {
+      await updatePassword(user, newPassword);
+      setPasswordSuccess(true);
+      setNewPassword('');
+      setConfirmPassword('');
+      setTimeout(() => setPasswordSuccess(false), 3000);
+    } catch (err: any) {
+      console.error(err);
+      if (err.code === 'auth/requires-recent-login') {
+        setPasswordError('Esta operação é sensível e requer login recente. Por favor, saia e entre novamente para trocar a senha.');
+      } else {
+        setPasswordError('Erro ao trocar a senha. Tente novamente.');
+      }
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
@@ -117,6 +159,70 @@ export const ProfilePage: React.FC = () => {
             </div>
           </form>
         </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <Lock className="w-5 h-5 text-primary" />
+          </div>
+          <h2 className="text-lg font-bold text-gray-900">Alterar Senha</h2>
+        </div>
+
+        <form onSubmit={handleUpdatePassword} className="space-y-4">
+          {passwordSuccess && (
+            <div className="p-4 bg-emerald-50 border border-emerald-100 text-emerald-600 text-sm rounded-xl">
+              Senha alterada com sucesso!
+            </div>
+          )}
+          {passwordError && (
+            <div className="p-4 bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl">
+              {passwordError}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nova Senha</label>
+              <div className="relative">
+                <Key className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="password"
+                  required
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar Nova Senha</label>
+              <div className="relative">
+                <Key className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <button
+              type="submit"
+              disabled={passwordLoading}
+              className="bg-primary hover:bg-primary-hover text-white font-semibold px-6 py-2 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-70"
+            >
+              {passwordLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+              Atualizar Senha
+            </button>
+          </div>
+        </form>
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">

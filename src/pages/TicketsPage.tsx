@@ -66,7 +66,7 @@ export const TicketsPage: React.FC = () => {
       setCustomers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
-    const unsubAdmins = onSnapshot(query(collection(db, 'users'), where('role', '==', 'ADMIN')), (snapshot) => {
+    const unsubAdmins = onSnapshot(query(collection(db, 'users'), where('role', 'in', ['ADMIN', 'GESTOR'])), (snapshot) => {
       setAdmins(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
@@ -124,10 +124,39 @@ export const TicketsPage: React.FC = () => {
         ['Cliente', customerName],
       ],
       theme: 'striped',
-      headStyles: { fillColor: [255, 99, 33] }, // Primary color
+      headStyles: { fillColor: [255, 99, 33] },
     });
 
     doc.save(`ticket_${ticket.id}.pdf`);
+  };
+
+  const exportAllToPDF = () => {
+    const doc = new jsPDF();
+    
+    doc.setFontSize(20);
+    doc.text('Relatório Geral de Tickets', 14, 22);
+    
+    doc.setFontSize(12);
+    doc.setTextColor(100);
+    doc.text(`Gerado em: ${new Date().toLocaleString()}`, 14, 30);
+
+    const tableData = filteredTickets.map(ticket => [
+      ticket.title,
+      customers.find(c => c.id === ticket.customerId)?.name || 'N/A',
+      ticket.responsible,
+      STATUS_COLUMNS.find(c => c.id === ticket.status)?.label || ticket.status,
+      ticket.deadline ? new Date(ticket.deadline).toLocaleDateString() : 'N/A'
+    ]);
+
+    autoTable(doc, {
+      startY: 40,
+      head: [['Título', 'Cliente', 'Responsável', 'Status', 'Prazo']],
+      body: tableData,
+      theme: 'striped',
+      headStyles: { fillColor: [255, 99, 33] },
+    });
+
+    doc.save(`relatorio_tickets_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -192,19 +221,30 @@ export const TicketsPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Tickets</h1>
           <p className="text-gray-500">Acompanhe o progresso das demandas em tempo real.</p>
         </div>
-        {isAdmin && (
-          <button
-            onClick={() => {
-              setEditingTicket(null);
-              setFormData({ title: '', description: '', status: 'todo', deadline: '', responsible: '', customerId: '' });
-              setIsModalOpen(true);
-            }}
-            className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-xl flex items-center gap-2 transition-colors font-semibold"
-          >
-            <Plus className="w-5 h-5" />
-            Novo Ticket
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <button
+              onClick={exportAllToPDF}
+              className="bg-white border border-gray-200 text-gray-600 px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-gray-50 transition-colors font-semibold"
+            >
+              <Download className="w-5 h-5" />
+              Exportar Relatório
+            </button>
+          )}
+          {isAdmin && (
+            <button
+              onClick={() => {
+                setEditingTicket(null);
+                setFormData({ title: '', description: '', status: 'todo', deadline: '', responsible: '', customerId: '' });
+                setIsModalOpen(true);
+              }}
+              className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-xl flex items-center gap-2 transition-colors font-semibold"
+            >
+              <Plus className="w-5 h-5" />
+              Novo Ticket
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-col md:flex-row gap-4 items-center bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">

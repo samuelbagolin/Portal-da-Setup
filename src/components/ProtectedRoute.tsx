@@ -2,8 +2,8 @@ import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
-export const ProtectedRoute: React.FC<{ allowedRoles?: ('ADMIN' | 'CLIENTE')[] }> = ({ allowedRoles }) => {
-  const { user, profile, loading, isAdmin } = useAuth();
+export const ProtectedRoute: React.FC<{ allowedRoles?: ('ADMIN' | 'CLIENTE' | 'GESTOR')[] }> = ({ allowedRoles }) => {
+  const { user, profile, loading } = useAuth();
 
   if (loading) {
     return (
@@ -18,8 +18,17 @@ export const ProtectedRoute: React.FC<{ allowedRoles?: ('ADMIN' | 'CLIENTE')[] }
   }
 
   if (allowedRoles) {
-    const userRole = isAdmin ? 'ADMIN' : profile?.role;
-    if (!userRole || !allowedRoles.includes(userRole)) {
+    const userRole = profile?.role;
+    // Special case for the master admin email
+    const isMasterAdmin = user?.email === 'samuel.bagolin@setuptecnologia.com.br';
+    
+    if (!userRole && !isMasterAdmin) {
+      return <Navigate to="/" replace />;
+    }
+
+    const effectiveRole = isMasterAdmin ? 'ADMIN' : userRole;
+    
+    if (!effectiveRole || !allowedRoles.includes(effectiveRole)) {
       return <Navigate to="/" replace />;
     }
   }

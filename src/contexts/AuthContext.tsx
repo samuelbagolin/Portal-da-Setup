@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 
 interface UserProfile {
@@ -32,11 +32,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(firebaseUser);
       
       if (firebaseUser) {
-        // Query by email to handle cases where UID might not match document ID (common in manual setup)
-        const q = query(collection(db, 'users'), where('email', '==', firebaseUser.email));
-        const unsubProfile = onSnapshot(q, (snapshot) => {
-          if (!snapshot.empty) {
-            const docSnap = snapshot.docs[0];
+        // Use the UID directly as the document ID for better security and performance
+        const docRef = doc(db, 'users', firebaseUser.uid);
+        const unsubProfile = onSnapshot(docRef, (docSnap) => {
+          if (docSnap.exists()) {
             setProfile({ id: docSnap.id, uid: firebaseUser.uid, ...docSnap.data() } as UserProfile);
           } else {
             // Fallback for the first admin if doc doesn't exist yet
@@ -56,6 +55,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setLoading(false);
         }, (error) => {
           console.error("Profile snapshot error:", error);
+          // If we get a permission error, it might be because the user was just created
+          // and the document isn't there yet, or they really don't have access.
           setLoading(false);
         });
 

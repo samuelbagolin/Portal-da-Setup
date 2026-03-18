@@ -20,7 +20,11 @@ export const LoginPage: React.FC = () => {
       navigate('/');
     } catch (err: any) {
       console.error(err);
-      setError('E-mail ou senha inválidos.');
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        setError('E-mail ou senha inválidos.');
+      } else {
+        setError(`Erro ao entrar: ${err.message}`);
+      }
     } finally {
       setLoading(false);
     }

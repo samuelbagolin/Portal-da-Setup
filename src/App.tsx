@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -12,6 +13,10 @@ import { MaterialsPage } from './pages/MaterialsPage';
 import { ProfilePage } from './pages/ProfilePage';
 
 export default function App() {
+  useEffect(() => {
+    document.title = 'Portal do Cliente';
+  }, []);
+
   return (
     <AuthProvider>
       <Router>
@@ -26,9 +31,13 @@ export default function App() {
               <Route path="/materials" element={<MaterialsPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               
+              {/* Admin/Gestor Routes */}
+              <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'GESTOR']} />}>
+                <Route path="/customers" element={<CustomersPage />} />
+              </Route>
+
               {/* Admin Only Routes */}
               <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
-                <Route path="/customers" element={<CustomersPage />} />
                 <Route path="/users" element={<UsersPage />} />
               </Route>
             </Route>

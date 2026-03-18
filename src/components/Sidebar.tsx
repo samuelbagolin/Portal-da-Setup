@@ -59,6 +59,14 @@ export const Sidebar: React.FC = () => {
     { to: '/materials', icon: FileText, label: 'Materiais' },
   ];
 
+  const gestorLinks = [
+    { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/customers', icon: Building2, label: 'Clientes' },
+    { to: '/tickets', icon: Ticket, label: 'Tickets' },
+    { to: '/agenda', icon: Calendar, label: 'Agenda' },
+    { to: '/materials', icon: FileText, label: 'Materiais' },
+  ];
+
   const clientLinks = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/tickets', icon: Ticket, label: 'Tickets' },
@@ -67,7 +75,7 @@ export const Sidebar: React.FC = () => {
     { to: '/profile', icon: UserCircle, label: 'Perfil' },
   ];
 
-  const links = isAdmin ? adminLinks : clientLinks;
+  const links = profile?.role === 'ADMIN' ? adminLinks : (profile?.role === 'GESTOR' ? gestorLinks : clientLinks);
 
   return (
     <>
@@ -137,7 +145,11 @@ export const Sidebar: React.FC = () => {
                 </button>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-900 truncate">{profile?.name || 'Usuário'}</p>
-                  <p className="text-xs text-gray-500 truncate">{isAdmin ? 'Administrador' : 'Cliente'}</p>
+                  <p className="text-xs text-gray-500 truncate">
+                    {profile?.role === 'ADMIN' ? 'Administrador' : 
+                     profile?.role === 'GESTOR' ? 'Gestor da Carteira' : 
+                     'Cliente'}
+                  </p>
                 </div>
               </div>
               <button

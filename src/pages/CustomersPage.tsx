@@ -77,7 +77,7 @@ export const CustomersPage: React.FC = () => {
         <button
           onClick={() => {
             setEditingCustomer(null);
-            setFormData({ name: '' });
+            setFormData({ name: '', responsibleAdminId: '' });
             setIsModalOpen(true);
           }}
           className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-xl flex items-center gap-2 transition-colors font-semibold"
@@ -136,7 +136,7 @@ export const CustomersPage: React.FC = () => {
                         <button
                           onClick={() => {
                             setEditingCustomer(customer);
-                            setFormData({ name: customer.name });
+                            setFormData({ name: customer.name, responsibleAdminId: customer.responsibleAdminId || '' });
                             setIsModalOpen(true);
                           }}
                           className="p-2 text-gray-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all"
