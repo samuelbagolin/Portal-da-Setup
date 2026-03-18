@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { collection, onSnapshot, query, where, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { db, auth, secondaryAuth } from '../firebase';
-import { createUserWithEmailAndPassword, signOut } from 'firebase/auth';
-import { Users, Plus, Search, Edit2, Trash2, X, Loader2, UserCircle } from 'lucide-react';
+import { createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'firebase/auth';
+import { Users, Plus, Search, Edit2, Trash2, X, Loader2, UserCircle, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ConfirmModal } from '../components/ConfirmModal';
 
@@ -88,6 +88,17 @@ export const UsersPage: React.FC = () => {
     if (deleteId) {
       await deleteDoc(doc(db, 'users', deleteId));
       setDeleteId(null);
+    }
+  };
+
+  const handleResetPassword = async (email: string) => {
+    if (!window.confirm(`Deseja enviar um e-mail de redefinição de senha para ${email}?`)) return;
+    try {
+      await sendPasswordResetEmail(auth, email);
+      alert('E-mail de redefinição enviado com sucesso!');
+    } catch (err: any) {
+      console.error(err);
+      alert(`Erro ao enviar e-mail: ${err.message}`);
     }
   };
 
@@ -180,6 +191,13 @@ export const UsersPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleResetPassword(user.email)}
+                          className="p-2 text-gray-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg transition-all"
+                          title="Redefinir Senha"
+                        >
+                          <Mail className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={() => {
                             setEditingUser(user);

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../firebase';
-import { LogIn, Loader2 } from 'lucide-react';
+import { LogIn, Loader2, Mail } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -25,6 +25,23 @@ export const LoginPage: React.FC = () => {
       } else {
         setError(`Erro ao entrar: ${err.message}`);
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setError('Por favor, informe seu e-mail para receber o link de redefinição.');
+      return;
+    }
+    setLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setError('E-mail de redefinição enviado com sucesso! Verifique sua caixa de entrada.');
+    } catch (err: any) {
+      console.error(err);
+      setError(`Erro ao enviar e-mail: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -59,7 +76,16 @@ export const LoginPage: React.FC = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium text-gray-700">Senha</label>
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                className="text-xs text-primary hover:underline font-medium"
+              >
+                Esqueceu sua senha?
+              </button>
+            </div>
             <input
               type="password"
               required

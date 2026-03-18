@@ -230,7 +230,11 @@ export const ProfilePage: React.FC = () => {
         <div className="space-y-4">
           <div className="flex justify-between py-3 border-b border-gray-50">
             <span className="text-sm text-gray-500">Tipo de Acesso</span>
-            <span className="text-sm font-bold text-gray-900">{profile?.role}</span>
+            <span className="text-sm font-bold text-gray-900">
+              {profile?.role === 'ADMIN' ? 'Administrador' : 
+               profile?.role === 'GESTOR' ? 'Gestor da Carteira' : 
+               'Cliente'}
+            </span>
           </div>
           {profile?.role === 'CLIENTE' && (
             <div className="flex justify-between py-3 border-b border-gray-50">

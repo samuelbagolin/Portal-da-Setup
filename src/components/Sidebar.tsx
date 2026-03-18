@@ -57,6 +57,7 @@ export const Sidebar: React.FC = () => {
     { to: '/tickets', icon: Ticket, label: 'Tickets' },
     { to: '/agenda', icon: Calendar, label: 'Agenda' },
     { to: '/materials', icon: FileText, label: 'Materiais' },
+    { to: '/profile', icon: UserCircle, label: 'Perfil' },
   ];
 
   const gestorLinks = [
@@ -65,6 +66,7 @@ export const Sidebar: React.FC = () => {
     { to: '/tickets', icon: Ticket, label: 'Tickets' },
     { to: '/agenda', icon: Calendar, label: 'Agenda' },
     { to: '/materials', icon: FileText, label: 'Materiais' },
+    { to: '/profile', icon: UserCircle, label: 'Perfil' },
   ];
 
   const clientLinks = [
