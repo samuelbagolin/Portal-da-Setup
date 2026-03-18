@@ -1,0 +1,90 @@
+{
+  "entities": {
+    "Customer": {
+      "title": "Customer",
+      "description": "A tenant in the system.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Name of the company/client" },
+        "responsibleAdminId": { "type": "string", "description": "ID of the admin responsible for this customer" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name"]
+    },
+    "User": {
+      "title": "User",
+      "description": "A user belonging to a customer or an admin.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["ADMIN", "CLIENTE"] },
+        "customerId": { "type": "string", "description": "Reference to Customer entity" },
+        "photoUrl": { "type": "string" }
+      },
+      "required": ["name", "email", "role"]
+    },
+    "Ticket": {
+      "title": "Ticket",
+      "description": "A support or task ticket.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["todo", "in-progress", "done"] },
+        "deadline": { "type": "string", "format": "date" },
+        "responsible": { "type": "string" },
+        "customerId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "status", "customerId"]
+    },
+    "Meeting": {
+      "title": "Meeting",
+      "description": "A scheduled meeting.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "time": { "type": "string" },
+        "link": { "type": "string" },
+        "customerId": { "type": "string" }
+      },
+      "required": ["title", "date", "time", "customerId"]
+    },
+    "Material": {
+      "title": "Material",
+      "description": "A resource for the client.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "type": { "type": "string", "enum": ["pdf", "video"] },
+        "url": { "type": "string" },
+        "customerId": { "type": "string" }
+      },
+      "required": ["title", "type", "url", "customerId"]
+    }
+  },
+  "firestore": {
+    "/customers/{customerId}": {
+      "schema": "Customer",
+      "description": "Customer documents"
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/tickets/{ticketId}": {
+      "schema": "Ticket",
+      "description": "Tickets linked to customers"
+    },
+    "/meetings/{meetingId}": {
+      "schema": "Meeting",
+      "description": "Meetings linked to customers"
+    },
+    "/materials/{materialId}": {
+      "schema": "Material",
+      "description": "Materials linked to customers"
+    }
+  }
+}

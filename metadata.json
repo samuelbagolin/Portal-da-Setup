@@ -1,0 +1,5 @@
+{
+  "name": "Portal do Cliente",
+  "description": "Sistema multi-tenant para gestão de clientes, tickets, agenda e materiais.",
+  "requestFramePermissions": []
+}
