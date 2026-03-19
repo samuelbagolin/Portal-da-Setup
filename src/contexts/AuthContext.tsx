@@ -41,6 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // Fallback for the first admin if doc doesn't exist yet
             if (firebaseUser.email === 'samuel.bagolin@setuptecnologia.com.br') {
               setProfile({
+                id: firebaseUser.uid,
                 uid: firebaseUser.uid,
                 name: 'Samuel Bagolin',
                 email: firebaseUser.email,

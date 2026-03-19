@@ -36,6 +36,7 @@ export const MaterialsPage: React.FC = () => {
     title: '',
     type: 'pdf',
     url: '',
+    coverUrl: '',
     customerId: ''
   });
 
@@ -103,7 +104,10 @@ export const MaterialsPage: React.FC = () => {
 
   const filteredMaterials = materials.filter(m => {
     const matchesSearch = m.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCustomer = selectedCustomer ? m.customerId === selectedCustomer : true;
+    // If a customer is selected, show that customer's materials AND global materials
+    const matchesCustomer = selectedCustomer 
+      ? (m.customerId === selectedCustomer || m.customerId === 'all') 
+      : true;
     return matchesSearch && matchesCustomer;
   });
 
@@ -167,18 +171,38 @@ export const MaterialsPage: React.FC = () => {
               key={material.id}
               className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-all group"
             >
-              <div className={`h-32 flex items-center justify-center ${
+              <div className={`h-40 relative flex items-center justify-center overflow-hidden ${
                 material.type === 'video' ? 'bg-blue-50' : 
                 material.type === 'site' ? 'bg-emerald-50' : 
                 'bg-orange-50'
               }`}>
-                {material.type === 'video' ? (
-                  <Video className="w-12 h-12 text-blue-500" />
-                ) : material.type === 'site' ? (
-                  <Globe className="w-12 h-12 text-emerald-500" />
+                {material.coverUrl ? (
+                  <img 
+                    src={material.coverUrl} 
+                    alt={material.title} 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    referrerPolicy="no-referrer"
+                  />
                 ) : (
-                  <FileText className="w-12 h-12 text-orange-500" />
+                  <>
+                    {material.type === 'video' ? (
+                      <Video className="w-12 h-12 text-blue-500" />
+                    ) : material.type === 'site' ? (
+                      <Globe className="w-12 h-12 text-emerald-500" />
+                    ) : (
+                      <FileText className="w-12 h-12 text-orange-500" />
+                    )}
+                  </>
                 )}
+                <div className="absolute top-3 left-3">
+                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded shadow-sm ${
+                    material.type === 'video' ? 'bg-blue-500 text-white' : 
+                    material.type === 'site' ? 'bg-emerald-500 text-white' :
+                    'bg-orange-500 text-white'
+                  }`}>
+                    {material.type}
+                  </span>
+                </div>
               </div>
               <div className="p-4">
                 <div className="flex justify-between items-start mb-2">
@@ -192,6 +216,7 @@ export const MaterialsPage: React.FC = () => {
                             title: material.title,
                             type: material.type,
                             url: material.url,
+                            coverUrl: material.coverUrl || '',
                             customerId: material.customerId
                           });
                           setIsModalOpen(true);
@@ -210,13 +235,6 @@ export const MaterialsPage: React.FC = () => {
                   )}
                 </div>
                 <div className="flex items-center gap-2 mb-4">
-                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
-                    material.type === 'video' ? 'bg-blue-100 text-blue-600' : 
-                    material.type === 'site' ? 'bg-emerald-100 text-emerald-600' :
-                    'bg-orange-100 text-orange-600'
-                  }`}>
-                    {material.type}
-                  </span>
                   {isAdmin && (
                     <span className="text-[10px] text-gray-400 font-medium truncate">
                       {material.customerId === 'all' ? 'Todos os Clientes' : customers.find(c => c.id === material.customerId)?.name}
@@ -299,6 +317,16 @@ export const MaterialsPage: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, url: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
                     placeholder="https://..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">URL da Imagem de Capa (Opcional)</label>
+                  <input
+                    type="url"
+                    value={formData.coverUrl}
+                    onChange={(e) => setFormData({ ...formData, coverUrl: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                    placeholder="https://exemplo.com/capa.jpg"
                   />
                 </div>
                 {isAdmin && (

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { setDoc, doc } from 'firebase/firestore';
-import { updatePassword } from 'firebase/auth';
+import { updatePassword, updateProfile } from 'firebase/auth';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { UserCircle, Camera, Loader2, Save, Lock, Key } from 'lucide-react';
@@ -12,6 +12,14 @@ export const ProfilePage: React.FC = () => {
   const [photoUrl, setPhotoUrl] = useState(profile?.photoUrl || '');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  // Sync state with profile when it loads
+  React.useEffect(() => {
+    if (profile) {
+      setName(profile.name || '');
+      setPhotoUrl(profile.photoUrl || '');
+    }
+  }, [profile]);
 
   // Password change state
   const [newPassword, setNewPassword] = useState('');
@@ -29,14 +37,22 @@ export const ProfilePage: React.FC = () => {
       // Use profile.id (Firestore doc ID) or fallback to profile.uid (Auth UID)
       const docId = profile.id || profile.uid;
       
-      // Use setDoc with merge: true to create the document if it doesn't exist
+      // Update Firestore
       await setDoc(doc(db, 'users', docId), {
         name,
         photoUrl,
-        email: profile.email, // Ensure email is always present
-        role: profile.role,   // Ensure role is always present
+        email: profile.email,
+        role: profile.role,
         customerId: profile.customerId || null
       }, { merge: true });
+
+      // Update Auth Profile for replication
+      if (user) {
+        await updateProfile(user, {
+          displayName: name,
+          photoURL: photoUrl
+        });
+      }
       
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);

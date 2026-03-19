@@ -1,7 +1,8 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
+import { updateProfile } from 'firebase/auth';
 import { 
   LayoutDashboard, 
   Users, 
@@ -18,7 +19,6 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { updateDoc, doc } from 'firebase/firestore';
-import { db } from '../firebase';
 
 export const Sidebar: React.FC = () => {
   const { profile, isAdmin } = useAuth();
@@ -35,12 +35,22 @@ export const Sidebar: React.FC = () => {
 
   const handleUpdatePhoto = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile?.id) return;
+    const docId = profile?.id || profile?.uid;
+    if (!docId) return;
     setIsUpdating(true);
     try {
-      await updateDoc(doc(db, 'users', profile.id), {
+      // Update Firestore
+      await updateDoc(doc(db, 'users', docId), {
         photoUrl: newPhotoUrl
       });
+
+      // Update Auth Profile for replication
+      if (auth.currentUser) {
+        await updateProfile(auth.currentUser, {
+          photoURL: newPhotoUrl
+        });
+      }
+
       setIsPhotoModalOpen(false);
     } catch (err) {
       console.error(err);
