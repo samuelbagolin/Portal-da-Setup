@@ -15,7 +15,9 @@ import {
   Filter,
   MoreVertical,
   Download,
-  UserCircle
+  UserCircle,
+  Maximize2,
+  ImageIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ConfirmModal } from '../components/ConfirmModal';
@@ -40,6 +42,7 @@ export const TicketsPage: React.FC = () => {
   const [editingTicket, setEditingTicket] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [viewingTicket, setViewingTicket] = useState<any>(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -47,7 +50,8 @@ export const TicketsPage: React.FC = () => {
     deadline: '',
     responsible: '',
     customerId: '',
-    tag: 'Melhoria'
+    tag: 'Melhoria',
+    errorImageUrl: ''
   });
   const [showNewTagInput, setShowNewTagInput] = useState(false);
   const [newTag, setNewTag] = useState('');
@@ -252,7 +256,7 @@ export const TicketsPage: React.FC = () => {
             <button
               onClick={() => {
                 setEditingTicket(null);
-                setFormData({ title: '', description: '', status: 'todo', deadline: '', responsible: '', customerId: '', tag: 'Melhoria' });
+                setFormData({ title: '', description: '', status: 'todo', deadline: '', responsible: '', customerId: '', tag: 'Melhoria', errorImageUrl: '' });
                 setShowNewTagInput(false);
                 setNewTag('');
                 setIsModalOpen(true);
@@ -305,7 +309,7 @@ export const TicketsPage: React.FC = () => {
                 <motion.div
                   layoutId={ticket.id}
                   key={ticket.id}
-                  className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow group relative"
+                  className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow group relative flex flex-col"
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex flex-col gap-1 flex-1">
@@ -321,38 +325,54 @@ export const TicketsPage: React.FC = () => {
                       )}
                       <h3 className="font-bold text-gray-900 leading-tight">{ticket.title}</h3>
                     </div>
-                    {isAdmin && (
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => {
-                            setEditingTicket(ticket);
-                            setFormData({
-                              title: ticket.title,
-                              description: ticket.description,
-                              status: ticket.status,
-                              deadline: ticket.deadline,
-                              responsible: ticket.responsible,
-                              customerId: ticket.customerId,
-                              tag: ticket.tag || 'Melhoria'
-                            });
-                            setShowNewTagInput(false);
-                            setNewTag('');
-                            setIsModalOpen(true);
-                          }}
-                          className="p-1 text-gray-400 hover:text-primary"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(ticket.id)}
-                          className="p-1 text-gray-400 hover:text-red-500"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    )}
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => setViewingTicket(ticket)}
+                        className="p-1 text-gray-400 hover:text-primary"
+                        title="Ver Detalhes"
+                      >
+                        <Maximize2 className="w-4 h-4" />
+                      </button>
+                      {isAdmin && (
+                        <>
+                          <button 
+                            onClick={() => {
+                              setEditingTicket(ticket);
+                              setFormData({
+                                title: ticket.title,
+                                description: ticket.description,
+                                status: ticket.status,
+                                deadline: ticket.deadline,
+                                responsible: ticket.responsible,
+                                customerId: ticket.customerId,
+                                tag: ticket.tag || 'Melhoria',
+                                errorImageUrl: ticket.errorImageUrl || ''
+                              });
+                              setShowNewTagInput(false);
+                              setNewTag('');
+                              setIsModalOpen(true);
+                            }}
+                            className="p-1 text-gray-400 hover:text-primary"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(ticket.id)}
+                            className="p-1 text-gray-400 hover:text-red-500"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                   <p className="text-sm text-gray-500 line-clamp-2 mb-4">{ticket.description}</p>
+                  
+                  {ticket.errorImageUrl && (
+                    <div className="mb-4 rounded-lg overflow-hidden border border-gray-100 h-24 bg-gray-50 flex items-center justify-center">
+                      <img src={ticket.errorImageUrl} alt="Erro" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    </div>
+                  )}
                   
                   <div className="flex items-center justify-between mt-auto">
                     <div className="flex items-center gap-2">
@@ -425,6 +445,89 @@ export const TicketsPage: React.FC = () => {
       />
 
       <AnimatePresence>
+        {viewingTicket && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden max-h-[90vh] flex flex-col"
+            >
+              <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                <div className="flex flex-col gap-1">
+                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded w-fit ${
+                    viewingTicket.tag === 'Bug' ? 'bg-red-100 text-red-600' :
+                    viewingTicket.tag === 'Melhoria' ? 'bg-blue-100 text-blue-600' :
+                    viewingTicket.tag === 'Desenvolvimento' ? 'bg-purple-100 text-purple-600' :
+                    'bg-gray-100 text-gray-600'
+                  }`}>
+                    {viewingTicket.tag}
+                  </span>
+                  <h2 className="text-xl font-bold text-gray-900">{viewingTicket.title}</h2>
+                </div>
+                <button onClick={() => setViewingTicket(null)} className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-full transition-colors">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="p-6 overflow-y-auto space-y-6">
+                <div>
+                  <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">Descrição Detalhada</h3>
+                  <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 text-gray-700 whitespace-pre-wrap leading-relaxed">
+                    {viewingTicket.description}
+                  </div>
+                </div>
+
+                {viewingTicket.errorImageUrl && (
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">Imagem do Erro</h3>
+                    <div className="rounded-xl overflow-hidden border border-gray-200 shadow-sm bg-gray-100">
+                      <img 
+                        src={viewingTicket.errorImageUrl} 
+                        alt="Erro" 
+                        className="w-full h-auto max-h-[400px] object-contain mx-auto" 
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-gray-100">
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase">Status</p>
+                    <p className="text-sm font-semibold text-gray-900 capitalize">
+                      {STATUS_COLUMNS.find(c => c.id === viewingTicket.status)?.label}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase">Responsável</p>
+                    <p className="text-sm font-semibold text-gray-900">{viewingTicket.responsible}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase">Prazo</p>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {viewingTicket.deadline ? new Date(viewingTicket.deadline).toLocaleDateString() : 'N/A'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase">Cliente</p>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {customers.find(c => c.id === viewingTicket.customerId)?.name || 'N/A'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex justify-end">
+                <button
+                  onClick={() => setViewingTicket(null)}
+                  className="px-6 py-2 bg-white border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-semibold"
+                >
+                  Fechar
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <motion.div
@@ -462,6 +565,19 @@ export const TicketsPage: React.FC = () => {
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none resize-none"
                     />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">URL da Imagem do Erro (Opcional)</label>
+                    <div className="relative">
+                      <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <input
+                        type="url"
+                        value={formData.errorImageUrl}
+                        onChange={(e) => setFormData({ ...formData, errorImageUrl: e.target.value })}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                        placeholder="https://exemplo.com/imagem.jpg"
+                      />
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
