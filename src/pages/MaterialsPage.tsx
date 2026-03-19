@@ -44,7 +44,8 @@ export const MaterialsPage: React.FC = () => {
 
     let q = query(collection(db, 'materials'));
     if (!isAdmin && profile.customerId) {
-      q = query(collection(db, 'materials'), where('customerId', '==', profile.customerId));
+      // Clients see their own materials OR materials for "all"
+      q = query(collection(db, 'materials'), where('customerId', 'in', [profile.customerId, 'all']));
     }
 
     const unsubMaterials = onSnapshot(q, (snapshot) => {
@@ -218,7 +219,7 @@ export const MaterialsPage: React.FC = () => {
                   </span>
                   {isAdmin && (
                     <span className="text-[10px] text-gray-400 font-medium truncate">
-                      {customers.find(c => c.id === material.customerId)?.name}
+                      {material.customerId === 'all' ? 'Todos os Clientes' : customers.find(c => c.id === material.customerId)?.name}
                     </span>
                   )}
                 </div>
@@ -310,6 +311,7 @@ export const MaterialsPage: React.FC = () => {
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
                     >
                       <option value="">Selecionar...</option>
+                      <option value="all">Todos os Clientes</option>
                       {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                   </div>
