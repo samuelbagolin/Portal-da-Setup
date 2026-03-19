@@ -28,16 +28,20 @@ export const MaterialsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState('');
+  const [selectedTopic, setSelectedTopic] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [showNewTopicInput, setShowNewTopicInput] = useState(false);
+  const [newTopic, setNewTopic] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     type: 'pdf',
     url: '',
     coverUrl: '',
-    customerId: ''
+    customerId: '',
+    topic: 'Geral'
   });
 
   useEffect(() => {
@@ -108,8 +112,18 @@ export const MaterialsPage: React.FC = () => {
     const matchesCustomer = selectedCustomer 
       ? (m.customerId === selectedCustomer || m.customerId === 'all') 
       : true;
-    return matchesSearch && matchesCustomer;
+    const matchesTopic = selectedTopic ? m.topic === selectedTopic : true;
+    return matchesSearch && matchesCustomer && matchesTopic;
   });
+
+  const topics: string[] = Array.from(new Set(materials.map(m => (m.topic as string) || 'Geral'))).sort() as string[];
+  const materialsByTopic = topics.reduce((acc: Record<string, any[]>, topic) => {
+    const topicMaterials = filteredMaterials.filter(m => (m.topic || 'Geral') === topic);
+    if (topicMaterials.length > 0) {
+      acc[topic] = topicMaterials;
+    }
+    return acc;
+  }, {});
 
   return (
     <div className="space-y-6">
@@ -122,7 +136,9 @@ export const MaterialsPage: React.FC = () => {
           <button
             onClick={() => {
               setEditingMaterial(null);
-              setFormData({ title: '', type: 'pdf', url: '', coverUrl: '', customerId: '' });
+              setFormData({ title: '', type: 'pdf', url: '', coverUrl: '', customerId: '', topic: 'Geral' });
+              setShowNewTopicInput(false);
+              setNewTopic('');
               setIsModalOpen(true);
             }}
             className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-xl flex items-center gap-2 transition-colors font-semibold"
@@ -158,104 +174,127 @@ export const MaterialsPage: React.FC = () => {
             </select>
           </div>
         )}
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <Filter className="w-5 h-5 text-gray-400" />
+          <select
+            value={selectedTopic}
+            onChange={(e) => setSelectedTopic(e.target.value)}
+            className="w-full md:w-48 px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+          >
+            <option value="">Todos os Tópicos</option>
+            {topics.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="space-y-12">
         {loading ? (
-          <div className="col-span-full py-12 text-center">
+          <div className="py-12 text-center">
             <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
           </div>
-        ) : filteredMaterials.length > 0 ? (
-          filteredMaterials.map((material) => (
-            <motion.div
-              layout
-              key={material.id}
-              className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-all group"
-            >
-              <div className={`h-40 relative flex items-center justify-center overflow-hidden ${
-                material.type === 'video' ? 'bg-blue-50' : 
-                material.type === 'site' ? 'bg-emerald-50' : 
-                'bg-orange-50'
-              }`}>
-                {material.coverUrl ? (
-                  <img 
-                    src={material.coverUrl} 
-                    alt={material.title} 
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    referrerPolicy="no-referrer"
-                  />
-                ) : (
-                  <>
-                    {material.type === 'video' ? (
-                      <Video className="w-12 h-12 text-blue-500" />
-                    ) : material.type === 'site' ? (
-                      <Globe className="w-12 h-12 text-emerald-500" />
-                    ) : (
-                      <FileText className="w-12 h-12 text-orange-500" />
-                    )}
-                  </>
-                )}
-                <div className="absolute top-3 left-3">
-                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded shadow-sm ${
-                    material.type === 'video' ? 'bg-blue-500 text-white' : 
-                    material.type === 'site' ? 'bg-emerald-500 text-white' :
-                    'bg-orange-500 text-white'
-                  }`}>
-                    {material.type}
-                  </span>
-                </div>
+        ) : Object.keys(materialsByTopic).length > 0 ? (
+          Object.entries(materialsByTopic).map(([topic, topicMaterials]: [string, any]) => (
+            <div key={topic} className="space-y-6">
+              <div className="flex items-center gap-4">
+                <h2 className="text-xl font-bold text-gray-900 whitespace-nowrap">{topic}</h2>
+                <div className="h-px bg-gray-100 w-full"></div>
               </div>
-              <div className="p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-bold text-gray-900 truncate flex-1">{material.title}</h3>
-                  {isAdmin && (
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button 
-                        onClick={() => {
-                          setEditingMaterial(material);
-                          setFormData({
-                            title: material.title,
-                            type: material.type,
-                            url: material.url,
-                            coverUrl: material.coverUrl || '',
-                            customerId: material.customerId
-                          });
-                          setIsModalOpen(true);
-                        }}
-                        className="p-1 text-gray-400 hover:text-primary"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(material.id)}
-                        className="p-1 text-gray-400 hover:text-red-500"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {topicMaterials.map((material: any) => (
+                  <motion.div
+                    layout
+                    key={material.id}
+                    className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-all group"
+                  >
+                    <div className={`h-40 relative flex items-center justify-center overflow-hidden ${
+                      material.type === 'video' ? 'bg-blue-50' : 
+                      material.type === 'site' ? 'bg-emerald-50' : 
+                      'bg-orange-50'
+                    }`}>
+                      {material.coverUrl ? (
+                        <img 
+                          src={material.coverUrl} 
+                          alt={material.title} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <>
+                          {material.type === 'video' ? (
+                            <Video className="w-12 h-12 text-blue-500" />
+                          ) : material.type === 'site' ? (
+                            <Globe className="w-12 h-12 text-emerald-500" />
+                          ) : (
+                            <FileText className="w-12 h-12 text-orange-500" />
+                          )}
+                        </>
+                      )}
+                      <div className="absolute top-3 left-3">
+                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded shadow-sm ${
+                          material.type === 'video' ? 'bg-blue-500 text-white' : 
+                          material.type === 'site' ? 'bg-emerald-500 text-white' :
+                          'bg-orange-500 text-white'
+                        }`}>
+                          {material.type}
+                        </span>
+                      </div>
                     </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 mb-4">
-                  {isAdmin && (
-                    <span className="text-[10px] text-gray-400 font-medium truncate">
-                      {material.customerId === 'all' ? 'Todos os Clientes' : customers.find(c => c.id === material.customerId)?.name}
-                    </span>
-                  )}
-                </div>
-                <a
-                  href={material.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full flex items-center justify-center gap-2 py-2 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-sm font-semibold text-gray-700"
-                >
-                  {material.type === 'video' ? <ExternalLink className="w-4 h-4" /> : <FileDown className="w-4 h-4" />}
-                  Acessar
-                </a>
+                    <div className="p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="font-bold text-gray-900 truncate flex-1">{material.title}</h3>
+                        {isAdmin && (
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button 
+                              onClick={() => {
+                                setEditingMaterial(material);
+                                setFormData({
+                                  title: material.title,
+                                  type: material.type,
+                                  url: material.url,
+                                  coverUrl: material.coverUrl || '',
+                                  customerId: material.customerId,
+                                  topic: material.topic || 'Geral'
+                                });
+                                setShowNewTopicInput(false);
+                                setIsModalOpen(true);
+                              }}
+                              className="p-1 text-gray-400 hover:text-primary"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={() => handleDelete(material.id)}
+                              className="p-1 text-gray-400 hover:text-red-500"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mb-4">
+                        {isAdmin && (
+                          <span className="text-[10px] text-gray-400 font-medium truncate">
+                            {material.customerId === 'all' ? 'Todos os Clientes' : customers.find(c => c.id === material.customerId)?.name}
+                          </span>
+                        )}
+                      </div>
+                      <a
+                        href={material.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full flex items-center justify-center gap-2 py-2 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-sm font-semibold text-gray-700"
+                      >
+                        {material.type === 'video' ? <ExternalLink className="w-4 h-4" /> : <FileDown className="w-4 h-4" />}
+                        Acessar
+                      </a>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
-            </motion.div>
+            </div>
           ))
         ) : (
-          <div className="col-span-full py-12 text-center text-gray-500 bg-white rounded-2xl border border-dashed border-gray-200">
+          <div className="py-12 text-center text-gray-500 bg-white rounded-2xl border border-dashed border-gray-200">
             Nenhum material disponível.
           </div>
         )}
@@ -308,6 +347,58 @@ export const MaterialsPage: React.FC = () => {
                     <option value="video">Vídeo</option>
                     <option value="site">Site / Link Externo</option>
                   </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tópico</label>
+                  {!showNewTopicInput ? (
+                    <div className="flex gap-2">
+                      <select
+                        value={formData.topic}
+                        onChange={(e) => {
+                          if (e.target.value === 'new') {
+                            setShowNewTopicInput(true);
+                          } else {
+                            setFormData({ ...formData, topic: e.target.value });
+                          }
+                        }}
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                      >
+                        {topics.map(t => <option key={t} value={t}>{t}</option>)}
+                        <option value="new">+ Novo Tópico...</option>
+                      </select>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        autoFocus
+                        placeholder="Nome do novo tópico"
+                        value={newTopic}
+                        onChange={(e) => setNewTopic(e.target.value)}
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (newTopic.trim()) {
+                            setFormData({ ...formData, topic: newTopic.trim() });
+                            setShowNewTopicInput(false);
+                            setNewTopic('');
+                          }
+                        }}
+                        className="px-3 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover"
+                      >
+                        OK
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowNewTopicInput(false)}
+                        className="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">URL do Material</label>

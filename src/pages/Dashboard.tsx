@@ -54,7 +54,10 @@ export const Dashboard: React.FC = () => {
       }));
 
       const qMeetings = query(collection(db, 'meetings'));
-      unsubscribes.push(onSnapshot(qMeetings, (s) => setStats(prev => ({ ...prev, meetings: s.size }))));
+      unsubscribes.push(onSnapshot(qMeetings, (s) => {
+        const activeMeetings = s.docs.filter(d => d.data().status !== 'completed').length;
+        setStats(prev => ({ ...prev, meetings: activeMeetings }));
+      }));
 
     } else if (profile.customerId) {
       // Client stats
@@ -73,7 +76,10 @@ export const Dashboard: React.FC = () => {
       }));
 
       const qMeetings = query(collection(db, 'meetings'), where('customerId', '==', profile.customerId));
-      unsubscribes.push(onSnapshot(qMeetings, (s) => setStats(prev => ({ ...prev, meetings: s.size }))));
+      unsubscribes.push(onSnapshot(qMeetings, (s) => {
+        const activeMeetings = s.docs.filter(d => d.data().status !== 'completed').length;
+        setStats(prev => ({ ...prev, meetings: activeMeetings }));
+      }));
 
       // Fetch responsible admin
       const fetchResponsible = async () => {
