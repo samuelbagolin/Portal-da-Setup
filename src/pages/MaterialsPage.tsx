@@ -122,7 +122,7 @@ export const MaterialsPage: React.FC = () => {
           <button
             onClick={() => {
               setEditingMaterial(null);
-              setFormData({ title: '', type: 'pdf', url: '', customerId: '' });
+              setFormData({ title: '', type: 'pdf', url: '', coverUrl: '', customerId: '' });
               setIsModalOpen(true);
             }}
             className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-xl flex items-center gap-2 transition-colors font-semibold"
@@ -153,6 +153,7 @@ export const MaterialsPage: React.FC = () => {
               className="w-full md:w-48 px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
             >
               <option value="">Todos os Clientes</option>
+              <option value="all">Global (Todos)</option>
               {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>

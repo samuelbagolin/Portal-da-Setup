@@ -46,8 +46,22 @@ export const TicketsPage: React.FC = () => {
     status: 'todo',
     deadline: '',
     responsible: '',
-    customerId: ''
+    customerId: '',
+    tag: 'Melhoria'
   });
+  const [showNewTagInput, setShowNewTagInput] = useState(false);
+  const [newTag, setNewTag] = useState('');
+
+  const DEFAULT_TAGS = ['Melhoria', 'Bug', 'Desenvolvimento'];
+  const [availableTags, setAvailableTags] = useState<string[]>(DEFAULT_TAGS);
+
+  useEffect(() => {
+    const uniqueTags = Array.from(new Set([
+      ...DEFAULT_TAGS,
+      ...tickets.map(t => t.tag).filter(Boolean)
+    ]));
+    setAvailableTags(uniqueTags);
+  }, [tickets]);
 
   useEffect(() => {
     if (!profile) return;
@@ -119,6 +133,7 @@ export const TicketsPage: React.FC = () => {
         ['Título', ticket.title],
         ['Descrição', ticket.description],
         ['Status', STATUS_COLUMNS.find(c => c.id === ticket.status)?.label || ticket.status],
+        ['Etiqueta', ticket.tag || 'N/A'],
         ['Prazo', ticket.deadline ? new Date(ticket.deadline).toLocaleDateString() : 'N/A'],
         ['Responsável', ticket.responsible],
         ['Cliente', customerName],
@@ -142,6 +157,7 @@ export const TicketsPage: React.FC = () => {
 
     const tableData = filteredTickets.map(ticket => [
       ticket.title,
+      ticket.tag || 'N/A',
       customers.find(c => c.id === ticket.customerId)?.name || 'N/A',
       ticket.responsible,
       STATUS_COLUMNS.find(c => c.id === ticket.status)?.label || ticket.status,
@@ -150,7 +166,7 @@ export const TicketsPage: React.FC = () => {
 
     autoTable(doc, {
       startY: 40,
-      head: [['Título', 'Cliente', 'Responsável', 'Status', 'Prazo']],
+      head: [['Título', 'Etiqueta', 'Cliente', 'Responsável', 'Status', 'Prazo']],
       body: tableData,
       theme: 'striped',
       headStyles: { fillColor: [255, 99, 33] },
@@ -165,6 +181,7 @@ export const TicketsPage: React.FC = () => {
     try {
       const data = {
         ...formData,
+        tag: showNewTagInput ? newTag : formData.tag,
         customerId: isAdmin ? formData.customerId : profile?.customerId,
         updatedAt: serverTimestamp()
       };
@@ -235,7 +252,9 @@ export const TicketsPage: React.FC = () => {
             <button
               onClick={() => {
                 setEditingTicket(null);
-                setFormData({ title: '', description: '', status: 'todo', deadline: '', responsible: '', customerId: '' });
+                setFormData({ title: '', description: '', status: 'todo', deadline: '', responsible: '', customerId: '', tag: 'Melhoria' });
+                setShowNewTagInput(false);
+                setNewTag('');
                 setIsModalOpen(true);
               }}
               className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-xl flex items-center gap-2 transition-colors font-semibold"
@@ -289,7 +308,19 @@ export const TicketsPage: React.FC = () => {
                   className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow group relative"
                 >
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-bold text-gray-900 leading-tight">{ticket.title}</h3>
+                    <div className="flex flex-col gap-1 flex-1">
+                      {ticket.tag && (
+                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded w-fit ${
+                          ticket.tag === 'Bug' ? 'bg-red-100 text-red-600' :
+                          ticket.tag === 'Melhoria' ? 'bg-blue-100 text-blue-600' :
+                          ticket.tag === 'Desenvolvimento' ? 'bg-purple-100 text-purple-600' :
+                          'bg-gray-100 text-gray-600'
+                        }`}>
+                          {ticket.tag}
+                        </span>
+                      )}
+                      <h3 className="font-bold text-gray-900 leading-tight">{ticket.title}</h3>
+                    </div>
                     {isAdmin && (
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button 
@@ -301,8 +332,11 @@ export const TicketsPage: React.FC = () => {
                               status: ticket.status,
                               deadline: ticket.deadline,
                               responsible: ticket.responsible,
-                              customerId: ticket.customerId
+                              customerId: ticket.customerId,
+                              tag: ticket.tag || 'Melhoria'
                             });
+                            setShowNewTagInput(false);
+                            setNewTag('');
                             setIsModalOpen(true);
                           }}
                           className="p-1 text-gray-400 hover:text-primary"
@@ -447,6 +481,46 @@ export const TicketsPage: React.FC = () => {
                       onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
                     />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Etiqueta</label>
+                    {!showNewTagInput ? (
+                      <select
+                        value={formData.tag}
+                        onChange={(e) => {
+                          if (e.target.value === 'new') {
+                            setShowNewTagInput(true);
+                          } else {
+                            setFormData({ ...formData, tag: e.target.value });
+                          }
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                      >
+                        {availableTags.map(tag => (
+                          <option key={tag} value={tag}>{tag}</option>
+                        ))}
+                        <option value="new">+ Criar nova etiqueta...</option>
+                      </select>
+                    ) : (
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          required
+                          placeholder="Nome da etiqueta"
+                          value={newTag}
+                          onChange={(e) => setNewTag(e.target.value)}
+                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowNewTagInput(false)}
+                          className="px-3 py-2 text-gray-400 hover:text-gray-600"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Responsável</label>
