@@ -13,9 +13,13 @@ import {
   Clock, 
   Video,
   ExternalLink,
-  Filter
+  Filter,
+  Download,
+  CheckCircle2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export const AgendaPage: React.FC = () => {
   const { profile, isAdmin } = useAuth();
@@ -32,7 +36,9 @@ export const AgendaPage: React.FC = () => {
     date: '',
     time: '',
     link: '',
-    customerId: ''
+    customerId: '',
+    status: 'pending',
+    notes: ''
   });
 
   useEffect(() => {
@@ -91,11 +97,45 @@ export const AgendaPage: React.FC = () => {
     }
   };
 
+  const exportMeetingToPDF = (meeting: any) => {
+    const doc = new jsPDF();
+    const customerName = customers.find(c => c.id === meeting.customerId)?.name || 'N/A';
+    
+    doc.setFontSize(20);
+    doc.text('Relatório de Reunião', 14, 22);
+    
+    doc.setFontSize(12);
+    doc.setTextColor(100);
+    doc.text(`Gerado em: ${new Date().toLocaleString()}`, 14, 30);
+
+    autoTable(doc, {
+      startY: 40,
+      head: [['Campo', 'Informação']],
+      body: [
+        ['Título', meeting.title],
+        ['Data', new Date(meeting.date).toLocaleDateString('pt-BR')],
+        ['Horário', meeting.time],
+        ['Cliente', customerName],
+        ['Status', meeting.status === 'completed' ? 'Concluída' : 'Pendente'],
+        ['Link', meeting.link || 'N/A'],
+        ['O que foi tratado', meeting.notes || 'N/A'],
+      ],
+      theme: 'striped',
+      headStyles: { fillColor: [255, 99, 33] },
+    });
+
+    doc.save(`reuniao_${meeting.id}.pdf`);
+  };
+
   const filteredMeetings = meetings.filter(m => {
     const matchesSearch = m.title.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCustomer = selectedCustomer ? m.customerId === selectedCustomer : true;
     return matchesSearch && matchesCustomer;
-  }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }).sort((a, b) => {
+    const dateA = new Date(`${a.date}T${a.time || '00:00'}`).getTime();
+    const dateB = new Date(`${b.date}T${b.time || '00:00'}`).getTime();
+    return dateB - dateA;
+  });
 
   return (
     <div className="space-y-6">
@@ -108,7 +148,7 @@ export const AgendaPage: React.FC = () => {
           <button
             onClick={() => {
               setEditingMeeting(null);
-              setFormData({ title: '', date: '', time: '', link: '', customerId: '' });
+              setFormData({ title: '', date: '', time: '', link: '', customerId: '', status: 'pending', notes: '' });
               setIsModalOpen(true);
             }}
             className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-xl flex items-center gap-2 transition-colors font-semibold"
@@ -157,12 +197,30 @@ export const AgendaPage: React.FC = () => {
               key={meeting.id}
               className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all group"
             >
-              <div className="flex justify-between items-start mb-4">
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex gap-3">
                 <div className="p-3 bg-primary/10 rounded-xl">
                   <Video className="w-6 h-6 text-primary" />
                 </div>
+                {meeting.status === 'completed' && (
+                  <div className="flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[10px] font-bold uppercase h-fit mt-1">
+                    <CheckCircle2 className="w-3 h-3" />
+                    Concluída
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 {isAdmin && (
-                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => exportMeetingToPDF(meeting)}
+                    className="p-2 text-gray-400 hover:text-primary hover:bg-primary/5 rounded-lg"
+                    title="Exportar PDF"
+                  >
+                    <Download className="w-4 h-4" />
+                  </button>
+                )}
+                {isAdmin && (
+                  <>
                     <button 
                       onClick={() => {
                         setEditingMeeting(meeting);
@@ -171,7 +229,9 @@ export const AgendaPage: React.FC = () => {
                           date: meeting.date,
                           time: meeting.time,
                           link: meeting.link,
-                          customerId: meeting.customerId
+                          customerId: meeting.customerId,
+                          status: meeting.status || 'pending',
+                          notes: meeting.notes || ''
                         });
                         setIsModalOpen(true);
                       }}
@@ -185,9 +245,10 @@ export const AgendaPage: React.FC = () => {
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
-                  </div>
+                  </>
                 )}
               </div>
+            </div>
 
               <h3 className="text-lg font-bold text-gray-900 mb-2">{meeting.title}</h3>
               
@@ -206,6 +267,13 @@ export const AgendaPage: React.FC = () => {
                   </div>
                 )}
               </div>
+
+              {meeting.notes && (
+                <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-100 mb-4">
+                  <p className="text-xs font-bold text-gray-400 uppercase mb-1 tracking-wider">O que foi tratado:</p>
+                  <p className="text-sm text-gray-600 line-clamp-3 italic">"{meeting.notes}"</p>
+                </div>
+              )}
 
               {meeting.link && (
                 <a
@@ -286,6 +354,26 @@ export const AgendaPage: React.FC = () => {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
                     placeholder="https://meet.google.com/..."
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">O que foi tratado</label>
+                  <textarea
+                    rows={3}
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none resize-none"
+                    placeholder="Resumo da reunião..."
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="status"
+                    checked={formData.status === 'completed'}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.checked ? 'completed' : 'pending' })}
+                    className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+                  />
+                  <label htmlFor="status" className="text-sm font-medium text-gray-700">Reunião Concluída</label>
                 </div>
                 {isAdmin && (
                   <div>
