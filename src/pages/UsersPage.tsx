@@ -5,8 +5,11 @@ import { createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from 
 import { Users, Plus, Search, Edit2, Trash2, X, Loader2, UserCircle, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { useAuth } from '../contexts/AuthContext';
 
 export const UsersPage: React.FC = () => {
+  const { profile } = useAuth();
+  const isGestor = profile?.role === 'GESTOR';
   const [users, setUsers] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,7 +30,7 @@ export const UsersPage: React.FC = () => {
     { id: 'CLIENTE', label: 'CLIENTE' },
     { id: 'ADMIN', label: 'ADMIN' },
     { id: 'GESTOR', label: 'Gestor da Carteira' }
-  ];
+  ].filter(role => !isGestor || role.id === 'CLIENTE');
 
   useEffect(() => {
     const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
@@ -191,35 +194,39 @@ export const UsersPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleResetPassword(user.email)}
-                          className="p-2 text-gray-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg transition-all"
-                          title="Redefinir Senha"
-                        >
-                          <Mail className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            setEditingUser(user);
-                            setFormData({ 
-                              name: user.name, 
-                              email: user.email, 
-                              password: '', 
-                              role: user.role, 
-                              customerId: user.customerId || '' 
-                            });
-                            setIsModalOpen(true);
-                          }}
-                          className="p-2 text-gray-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(user.id)}
-                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {!isGestor && (
+                          <>
+                            <button
+                              onClick={() => handleResetPassword(user.email)}
+                              className="p-2 text-gray-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg transition-all"
+                              title="Redefinir Senha"
+                            >
+                              <Mail className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingUser(user);
+                                setFormData({ 
+                                  name: user.name, 
+                                  email: user.email, 
+                                  password: '', 
+                                  role: user.role, 
+                                  customerId: user.customerId || '' 
+                                });
+                                setIsModalOpen(true);
+                              }}
+                              className="p-2 text-gray-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(user.id)}
+                              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

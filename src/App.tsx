@@ -34,10 +34,6 @@ export default function App() {
               {/* Admin/Gestor Routes */}
               <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'GESTOR']} />}>
                 <Route path="/customers" element={<CustomersPage />} />
-              </Route>
-
-              {/* Admin Only Routes */}
-              <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
                 <Route path="/users" element={<UsersPage />} />
               </Route>
             </Route>

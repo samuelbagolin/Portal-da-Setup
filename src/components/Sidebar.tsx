@@ -73,6 +73,7 @@ export const Sidebar: React.FC = () => {
   const gestorLinks = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/customers', icon: Building2, label: 'Clientes' },
+    { to: '/users', icon: Users, label: 'Usuários' },
     { to: '/tickets', icon: Ticket, label: 'Tickets' },
     { to: '/agenda', icon: Calendar, label: 'Agenda' },
     { to: '/materials', icon: FileText, label: 'Materiais' },
