@@ -15,7 +15,8 @@ import {
   ExternalLink,
   Filter,
   Download,
-  CheckCircle2
+  CheckCircle2,
+  UserCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import jsPDF from 'jspdf';
@@ -25,6 +26,7 @@ export const AgendaPage: React.FC = () => {
   const { profile, isAdmin } = useAuth();
   const [meetings, setMeetings] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState('');
@@ -37,6 +39,7 @@ export const AgendaPage: React.FC = () => {
     time: '',
     link: '',
     customerId: '',
+    responsibleId: '',
     status: 'pending',
     notes: ''
   });
@@ -58,9 +61,14 @@ export const AgendaPage: React.FC = () => {
       setCustomers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
+    const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
+      setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
     return () => {
       unsubMeetings();
       unsubCustomers();
+      unsubUsers();
     };
   }, [profile, isAdmin]);
 
@@ -108,6 +116,8 @@ export const AgendaPage: React.FC = () => {
     doc.setTextColor(100);
     doc.text(`Gerado em: ${new Date().toLocaleString()}`, 14, 30);
 
+    const responsibleName = users.find(u => u.id === meeting.responsibleId)?.name || 'N/A';
+
     autoTable(doc, {
       startY: 40,
       head: [['Campo', 'Informação']],
@@ -116,6 +126,7 @@ export const AgendaPage: React.FC = () => {
         ['Data', new Date(meeting.date).toLocaleDateString('pt-BR')],
         ['Horário', meeting.time],
         ['Cliente', customerName],
+        ['Responsável', responsibleName],
         ['Status', meeting.status === 'completed' ? 'Concluída' : 'Pendente'],
         ['Link', meeting.link || 'N/A'],
         ['O que foi tratado', meeting.notes || 'N/A'],
@@ -148,7 +159,7 @@ export const AgendaPage: React.FC = () => {
           <button
             onClick={() => {
               setEditingMeeting(null);
-              setFormData({ title: '', date: '', time: '', link: '', customerId: '', status: 'pending', notes: '' });
+              setFormData({ title: '', date: '', time: '', link: '', customerId: '', responsibleId: '', status: 'pending', notes: '' });
               setIsModalOpen(true);
             }}
             className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-xl flex items-center gap-2 transition-colors font-semibold"
@@ -170,7 +181,7 @@ export const AgendaPage: React.FC = () => {
             className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
           />
         </div>
-        {isAdmin && (
+        {(isAdmin || profile?.role === 'GESTOR') && (
           <div className="flex items-center gap-2 w-full md:w-auto">
             <Filter className="w-5 h-5 text-gray-400" />
             <select
@@ -230,6 +241,7 @@ export const AgendaPage: React.FC = () => {
                           time: meeting.time,
                           link: meeting.link,
                           customerId: meeting.customerId,
+                          responsibleId: meeting.responsibleId || '',
                           status: meeting.status || 'pending',
                           notes: meeting.notes || ''
                         });
@@ -261,6 +273,12 @@ export const AgendaPage: React.FC = () => {
                   <Clock className="w-4 h-4" />
                   {meeting.time}
                 </div>
+                {meeting.responsibleId && (
+                  <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                    <UserCircle className="w-4 h-4 text-primary" />
+                    {users.find(u => u.id === meeting.responsibleId)?.name || 'Responsável não encontrado'}
+                  </div>
+                )}
                 {isAdmin && (
                   <div className="text-xs font-semibold text-primary uppercase tracking-wider">
                     {customers.find(c => c.id === meeting.customerId)?.name}
@@ -322,6 +340,20 @@ export const AgendaPage: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Responsável pela Execução</label>
+                  <select
+                    required
+                    value={formData.responsibleId}
+                    onChange={(e) => setFormData({ ...formData, responsibleId: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                  >
+                    <option value="">Selecionar Responsável...</option>
+                    {users.filter(u => u.role === 'ADMIN' || u.role === 'GESTOR').map(u => (
+                      <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>

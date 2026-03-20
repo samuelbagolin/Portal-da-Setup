@@ -14,6 +14,7 @@ export const UsersPage: React.FC = () => {
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [clientSearchTerm, setClientSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -108,6 +109,10 @@ export const UsersPage: React.FC = () => {
   const filteredUsers = users.filter(u => 
     u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     u.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredCustomers = customers.filter(c =>
+    c.name.toLowerCase().includes(clientSearchTerm.toLowerCase())
   );
 
   return (
@@ -241,6 +246,70 @@ export const UsersPage: React.FC = () => {
             </tbody>
           </table>
         </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-gray-50 bg-gray-50/50">
+          <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <Search className="w-5 h-5 text-primary" />
+            Pesquisar Responsáveis por Cliente
+          </h2>
+          <p className="text-sm text-gray-500 mt-1">Busque um cliente para ver quem é o gestor ou administrador responsável.</p>
+          
+          <div className="mt-4 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Digite o nome do cliente..."
+              value={clientSearchTerm}
+              onChange={(e) => setClientSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none shadow-sm"
+            />
+          </div>
+        </div>
+
+        {clientSearchTerm && (
+          <div className="p-6">
+            {filteredCustomers.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredCustomers.map(customer => {
+                  const responsible = users.find(u => u.id === customer.responsibleAdminId);
+                  return (
+                    <div key={customer.id} className="p-4 rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-shadow">
+                      <h3 className="font-bold text-gray-900 mb-3 border-b border-gray-50 pb-2">{customer.name}</h3>
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Responsável / Gestor:</p>
+                          {responsible ? (
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                                {responsible.photoUrl ? (
+                                  <img src={responsible.photoUrl} className="w-full h-full object-cover rounded-full" />
+                                ) : (
+                                  <UserCircle className="w-5 h-5" />
+                                )}
+                              </div>
+                              <div>
+                                <p className="text-sm font-semibold text-gray-900">{responsible.name}</p>
+                                <p className="text-xs text-gray-500">{responsible.role === 'ADMIN' ? 'Administrador' : 'Gestor da Carteira'}</p>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-400 italic">Nenhum responsável vinculado</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                Nenhum cliente encontrado com esse nome.
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <ConfirmModal

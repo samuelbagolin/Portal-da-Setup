@@ -48,7 +48,8 @@
         "date": { "type": "string", "format": "date" },
         "time": { "type": "string" },
         "link": { "type": "string" },
-        "customerId": { "type": "string" }
+        "customerId": { "type": "string" },
+        "responsibleId": { "type": "string", "description": "ID of the user responsible for the meeting" }
       },
       "required": ["title", "date", "time", "customerId"]
     },
