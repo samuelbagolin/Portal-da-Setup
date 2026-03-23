@@ -21,6 +21,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { ConfirmModal } from '../components/ConfirmModal';
 
 export const AgendaPage: React.FC = () => {
   const { profile, isAdmin } = useAuth();
@@ -33,6 +34,7 @@ export const AgendaPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMeeting, setEditingMeeting] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     date: '',
@@ -72,6 +74,12 @@ export const AgendaPage: React.FC = () => {
     };
   }, [profile, isAdmin]);
 
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const [year, month, day] = dateStr.split('-');
+    return `${day}/${month}/${year}`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -99,9 +107,14 @@ export const AgendaPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Deseja excluir esta reunião?')) {
-      await deleteDoc(doc(db, 'meetings', id));
+  const handleDelete = (id: string) => {
+    setDeleteId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (deleteId) {
+      await deleteDoc(doc(db, 'meetings', deleteId));
+      setDeleteId(null);
     }
   };
 
@@ -123,7 +136,7 @@ export const AgendaPage: React.FC = () => {
       head: [['Campo', 'Informação']],
       body: [
         ['Título', meeting.title],
-        ['Data', new Date(meeting.date).toLocaleDateString('pt-BR')],
+        ['Data', formatDate(meeting.date)],
         ['Horário', meeting.time],
         ['Cliente', customerName],
         ['Responsável', responsibleName],
@@ -267,7 +280,7 @@ export const AgendaPage: React.FC = () => {
               <div className="space-y-2 mb-6">
                 <div className="flex items-center gap-2 text-sm text-gray-500">
                   <Calendar className="w-4 h-4" />
-                  {new Date(meeting.date).toLocaleDateString('pt-BR')}
+                  {formatDate(meeting.date)}
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-500">
                   <Clock className="w-4 h-4" />
@@ -312,6 +325,14 @@ export const AgendaPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={confirmDelete}
+        title="Excluir Reunião"
+        message="Tem certeza que deseja excluir esta reunião? Esta ação não pode ser desfeita."
+      />
 
       <AnimatePresence>
         {isModalOpen && (
