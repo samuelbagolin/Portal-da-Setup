@@ -16,12 +16,14 @@ import {
   Filter,
   Download,
   CheckCircle2,
-  UserCircle
+  UserCircle,
+  Building2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { SearchableSelect } from '../components/SearchableSelect';
 
 export const AgendaPage: React.FC = () => {
   const { profile, isAdmin } = useAuth();
@@ -197,14 +199,13 @@ export const AgendaPage: React.FC = () => {
         {(isAdmin || profile?.role === 'GESTOR') && (
           <div className="flex items-center gap-2 w-full md:w-auto">
             <Filter className="w-5 h-5 text-gray-400" />
-            <select
+            <SearchableSelect
+              className="w-full md:w-48"
+              options={customers}
               value={selectedCustomer}
-              onChange={(e) => setSelectedCustomer(e.target.value)}
-              className="w-full md:w-48 px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
-            >
-              <option value="">Todos os Clientes</option>
-              {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+              onChange={(val) => setSelectedCustomer(val)}
+              placeholder="Todos os Clientes"
+            />
           </div>
         )}
       </div>
@@ -341,7 +342,7 @@ export const AgendaPage: React.FC = () => {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+              className="bg-white rounded-2xl shadow-xl w-full max-w-md"
             >
               <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -429,17 +430,15 @@ export const AgendaPage: React.FC = () => {
                   <label htmlFor="status" className="text-sm font-medium text-gray-700">Reunião Concluída</label>
                 </div>
                 {isAdmin && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Cliente</label>
-                    <select
+                  <div className="md:col-span-2">
+                    <SearchableSelect
+                      label="Cliente"
                       required
+                      options={customers}
                       value={formData.customerId}
-                      onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
-                    >
-                      <option value="">Selecionar...</option>
-                      {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
+                      onChange={(val) => setFormData({ ...formData, customerId: val })}
+                      placeholder="Selecionar cliente..."
+                    />
                   </div>
                 )}
                 <div className="flex gap-3 pt-4">

@@ -5,6 +5,7 @@ import { createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from 
 import { Users, Plus, Search, Edit2, Trash2, X, Loader2, UserCircle, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { SearchableSelect } from '../components/SearchableSelect';
 import { useAuth } from '../contexts/AuthContext';
 
 export const UsersPage: React.FC = () => {
@@ -327,7 +328,7 @@ export const UsersPage: React.FC = () => {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+              className="bg-white rounded-2xl shadow-xl w-full max-w-md"
             >
               <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -371,7 +372,7 @@ export const UsersPage: React.FC = () => {
                     />
                   </div>
                 )}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Acesso</label>
                     <select
@@ -385,18 +386,14 @@ export const UsersPage: React.FC = () => {
                     </select>
                   </div>
                   {formData.role === 'CLIENTE' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Cliente</label>
-                      <select
-                        required
-                        value={formData.customerId}
-                        onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
-                      >
-                        <option value="">Selecionar...</option>
-                        {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                      </select>
-                    </div>
+                    <SearchableSelect
+                      label="Cliente"
+                      required
+                      options={customers}
+                      value={formData.customerId}
+                      onChange={(val) => setFormData({ ...formData, customerId: val })}
+                      placeholder="Selecionar cliente..."
+                    />
                   )}
                 </div>
                 <div className="flex gap-3 pt-4">

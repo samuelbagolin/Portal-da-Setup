@@ -17,10 +17,12 @@ import {
   Download,
   UserCircle,
   Maximize2,
-  ImageIcon
+  ImageIcon,
+  Building2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { SearchableSelect } from '../components/SearchableSelect';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -51,7 +53,8 @@ export const TicketsPage: React.FC = () => {
     responsible: '',
     customerId: '',
     tag: 'Melhoria',
-    errorImageUrl: ''
+    errorImageUrl: '',
+    products: [] as string[]
   });
   const [showNewTagInput, setShowNewTagInput] = useState(false);
   const [newTag, setNewTag] = useState('');
@@ -256,7 +259,7 @@ export const TicketsPage: React.FC = () => {
             <button
               onClick={() => {
                 setEditingTicket(null);
-                setFormData({ title: '', description: '', status: 'todo', deadline: '', responsible: '', customerId: '', tag: 'Melhoria', errorImageUrl: '' });
+                setFormData({ title: '', description: '', status: 'todo', deadline: '', responsible: '', customerId: '', tag: 'Melhoria', errorImageUrl: '', products: [] });
                 setShowNewTagInput(false);
                 setNewTag('');
                 setIsModalOpen(true);
@@ -284,14 +287,13 @@ export const TicketsPage: React.FC = () => {
         {isAdmin && (
           <div className="flex items-center gap-2 w-full md:w-auto">
             <Filter className="w-5 h-5 text-gray-400" />
-            <select
+            <SearchableSelect
+              className="w-full md:w-48"
+              options={customers}
               value={selectedCustomer}
-              onChange={(e) => setSelectedCustomer(e.target.value)}
-              className="w-full md:w-48 px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
-            >
-              <option value="">Todos os Clientes</option>
-              {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+              onChange={(val) => setSelectedCustomer(val)}
+              placeholder="Todos os Clientes"
+            />
           </div>
         )}
       </div>
@@ -346,7 +348,8 @@ export const TicketsPage: React.FC = () => {
                                 responsible: ticket.responsible,
                                 customerId: ticket.customerId,
                                 tag: ticket.tag || 'Melhoria',
-                                errorImageUrl: ticket.errorImageUrl || ''
+                                errorImageUrl: ticket.errorImageUrl || '',
+                                products: ticket.products || []
                               });
                               setShowNewTagInput(false);
                               setNewTag('');
@@ -366,7 +369,17 @@ export const TicketsPage: React.FC = () => {
                       )}
                     </div>
                   </div>
-                  <p className="text-sm text-gray-500 line-clamp-2 mb-4">{ticket.description}</p>
+                  <p className="text-sm text-gray-500 line-clamp-2 mb-2">{ticket.description}</p>
+                  
+                  {ticket.products && ticket.products.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-4">
+                      {ticket.products.map((p: string) => (
+                        <span key={p} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] font-medium">
+                          {p}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   
                   {ticket.errorImageUrl && (
                     <div className="mb-4 rounded-lg overflow-hidden border border-gray-100 h-24 bg-gray-50 flex items-center justify-center">
@@ -514,6 +527,18 @@ export const TicketsPage: React.FC = () => {
                       {customers.find(c => c.id === viewingTicket.customerId)?.name || 'N/A'}
                     </p>
                   </div>
+                  {viewingTicket.products && viewingTicket.products.length > 0 && (
+                    <div className="col-span-2 sm:col-span-4">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Produtos</p>
+                      <div className="flex flex-wrap gap-1">
+                        {viewingTicket.products.map((p: string) => (
+                          <span key={p} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-medium">
+                            {p}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex justify-end">
@@ -534,7 +559,7 @@ export const TicketsPage: React.FC = () => {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden"
+              className="bg-white rounded-2xl shadow-xl w-full max-w-lg"
             >
               <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -653,19 +678,38 @@ export const TicketsPage: React.FC = () => {
                     </select>
                   </div>
                   {isAdmin && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Cliente</label>
-                      <select
+                    <div className="md:col-span-2">
+                      <SearchableSelect
+                        label="Cliente"
                         required
+                        options={customers}
                         value={formData.customerId}
-                        onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
-                      >
-                        <option value="">Selecionar...</option>
-                        {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                      </select>
+                        onChange={(val) => setFormData({ ...formData, customerId: val })}
+                        placeholder="Selecionar cliente..."
+                      />
                     </div>
                   )}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Produtos</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {['Sittax', 'Openix', 'Recupera', 'ST'].map(product => (
+                        <label key={product} className="flex items-center gap-2 p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={formData.products.includes(product)}
+                            onChange={(e) => {
+                              const newProducts = e.target.checked
+                                ? [...formData.products, product]
+                                : formData.products.filter(p => p !== product);
+                              setFormData({ ...formData, products: newProducts });
+                            }}
+                            className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+                          />
+                          <span className="text-sm text-gray-700">{product}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
                 </div>
                 <div className="flex gap-3 pt-4">
                   <button

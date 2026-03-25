@@ -6,6 +6,12 @@
       "type": "object",
       "properties": {
         "name": { "type": "string", "description": "Name of the company/client" },
+        "cnpj": { "type": "string", "description": "CNPJ of the company" },
+        "products": { 
+          "type": "array", 
+          "items": { "type": "string" },
+          "description": "Products selected for this customer (Sittax, Openix, Recupera, ST)"
+        },
         "responsibleAdminId": { "type": "string", "description": "ID of the admin responsible for this customer" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
@@ -35,6 +41,11 @@
         "deadline": { "type": "string", "format": "date" },
         "responsible": { "type": "string" },
         "customerId": { "type": "string" },
+        "products": { 
+          "type": "array", 
+          "items": { "type": "string" },
+          "description": "Products related to this ticket"
+        },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["title", "status", "customerId"]

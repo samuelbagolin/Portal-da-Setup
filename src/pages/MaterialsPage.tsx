@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { SearchableSelect } from '../components/SearchableSelect';
 
 export const MaterialsPage: React.FC = () => {
   const { profile, isAdmin } = useAuth();
@@ -33,6 +34,7 @@ export const MaterialsPage: React.FC = () => {
   const [editingMaterial, setEditingMaterial] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [clientSearchTerm, setClientSearchTerm] = useState('');
   const [showNewTopicInput, setShowNewTopicInput] = useState(false);
   const [newTopic, setNewTopic] = useState('');
   const [formData, setFormData] = useState({
@@ -185,15 +187,13 @@ export const MaterialsPage: React.FC = () => {
         {isAdmin && (
           <div className="flex items-center gap-2 w-full md:w-auto">
             <Filter className="w-5 h-5 text-gray-400" />
-            <select
+            <SearchableSelect
+              className="w-full md:w-48"
+              options={[{ id: 'all', name: 'Global (Todos)' }, ...customers]}
               value={selectedCustomer}
-              onChange={(e) => setSelectedCustomer(e.target.value)}
-              className="w-full md:w-48 px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
-            >
-              <option value="">Todos os Clientes</option>
-              <option value="all">Global (Todos)</option>
-              {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+              onChange={(val) => setSelectedCustomer(val)}
+              placeholder="Todos os Clientes"
+            />
           </div>
         )}
         <div className="flex items-center gap-2 w-full md:w-auto">
@@ -342,7 +342,7 @@ export const MaterialsPage: React.FC = () => {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+              className="bg-white rounded-2xl shadow-xl w-full max-w-md"
             >
               <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -451,6 +451,16 @@ export const MaterialsPage: React.FC = () => {
                 {isAdmin && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Clientes</label>
+                    <div className="relative mb-2">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <input
+                        type="text"
+                        placeholder="Buscar cliente..."
+                        value={clientSearchTerm}
+                        onChange={(e) => setClientSearchTerm(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                      />
+                    </div>
                     <div className="border border-gray-300 rounded-lg p-3 max-h-48 overflow-y-auto space-y-2">
                       <label className="flex items-center gap-2 p-1 hover:bg-gray-50 rounded cursor-pointer">
                         <input
@@ -468,7 +478,9 @@ export const MaterialsPage: React.FC = () => {
                         <span className="text-sm font-medium text-gray-900">Todos os Clientes</span>
                       </label>
                       
-                      {!formData.customerIds.includes('all') && customers.map(c => (
+                      {!formData.customerIds.includes('all') && customers
+                        .filter(c => c.name.toLowerCase().includes(clientSearchTerm.toLowerCase()))
+                        .map(c => (
                         <label key={c.id} className="flex items-center gap-2 p-1 hover:bg-gray-50 rounded cursor-pointer">
                           <input
                             type="checkbox"

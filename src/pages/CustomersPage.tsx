@@ -12,7 +12,7 @@ export const CustomersPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<any>(null);
-  const [formData, setFormData] = useState({ name: '', responsibleAdminId: '' });
+  const [formData, setFormData] = useState({ name: '', cnpj: '', products: [] as string[], responsibleAdminId: '' });
   const [submitting, setSubmitting] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -43,7 +43,7 @@ export const CustomersPage: React.FC = () => {
         });
       }
       setIsModalOpen(false);
-      setFormData({ name: '', responsibleAdminId: '' });
+      setFormData({ name: '', cnpj: '', products: [], responsibleAdminId: '' });
       setEditingCustomer(null);
     } catch (err) {
       console.error(err);
@@ -64,7 +64,8 @@ export const CustomersPage: React.FC = () => {
   };
 
   const filteredCustomers = customers.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase())
+    c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.cnpj && c.cnpj.includes(searchTerm))
   );
 
   return (
@@ -77,7 +78,7 @@ export const CustomersPage: React.FC = () => {
         <button
           onClick={() => {
             setEditingCustomer(null);
-            setFormData({ name: '', responsibleAdminId: '' });
+            setFormData({ name: '', cnpj: '', products: [], responsibleAdminId: '' });
             setIsModalOpen(true);
           }}
           className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-xl flex items-center gap-2 transition-colors font-semibold"
@@ -125,7 +126,12 @@ export const CustomersPage: React.FC = () => {
                         <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
                           <Building2 className="w-5 h-5" />
                         </div>
-                        <span className="font-semibold text-gray-900">{customer.name}</span>
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-gray-900">{customer.name}</span>
+                          {customer.cnpj && (
+                            <span className="text-xs text-gray-400">{customer.cnpj}</span>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
@@ -136,7 +142,12 @@ export const CustomersPage: React.FC = () => {
                         <button
                           onClick={() => {
                             setEditingCustomer(customer);
-                            setFormData({ name: customer.name, responsibleAdminId: customer.responsibleAdminId || '' });
+                            setFormData({ 
+                              name: customer.name, 
+                              cnpj: customer.cnpj || '', 
+                              products: customer.products || [],
+                              responsibleAdminId: customer.responsibleAdminId || '' 
+                            });
                             setIsModalOpen(true);
                           }}
                           className="p-2 text-gray-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all"
@@ -203,7 +214,38 @@ export const CustomersPage: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Responsável pela Carteira</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">CNPJ</label>
+                  <input
+                    type="text"
+                    value={formData.cnpj}
+                    onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                    placeholder="00.000.000/0000-00"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Produtos</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {['Sittax', 'Openix', 'Recupera', 'ST'].map(product => (
+                      <label key={product} className="flex items-center gap-2 p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={formData.products.includes(product)}
+                          onChange={(e) => {
+                            const newProducts = e.target.checked
+                              ? [...formData.products, product]
+                              : formData.products.filter(p => p !== product);
+                            setFormData({ ...formData, products: newProducts });
+                          }}
+                          className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+                        />
+                        <span className="text-sm text-gray-700">{product}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Responsável</label>
                   <select
                     value={formData.responsibleAdminId}
                     onChange={(e) => setFormData({ ...formData, responsibleAdminId: e.target.value })}
