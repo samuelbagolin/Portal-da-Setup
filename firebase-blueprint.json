@@ -59,11 +59,17 @@
       "type": "object",
       "properties": {
         "title": { "type": "string" },
-        "type": { "type": "string", "enum": ["pdf", "video"] },
+        "type": { "type": "string", "enum": ["pdf", "video", "site"] },
         "url": { "type": "string" },
-        "customerId": { "type": "string" }
+        "coverUrl": { "type": "string" },
+        "customerIds": { 
+          "type": "array", 
+          "items": { "type": "string" },
+          "description": "List of Customer IDs or ['all']"
+        },
+        "topic": { "type": "string" }
       },
-      "required": ["title", "type", "url", "customerId"]
+      "required": ["title", "type", "url", "customerIds"]
     }
   },
   "firestore": {

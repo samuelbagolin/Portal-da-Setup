@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { collection, onSnapshot, query, where, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, or } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -40,7 +40,7 @@ export const MaterialsPage: React.FC = () => {
     type: 'pdf',
     url: '',
     coverUrl: '',
-    customerId: '',
+    customerIds: [] as string[],
     topic: 'Geral'
   });
 
@@ -50,7 +50,16 @@ export const MaterialsPage: React.FC = () => {
     let q = query(collection(db, 'materials'));
     if (!isAdmin && profile.customerId) {
       // Clients see their own materials OR materials for "all"
-      q = query(collection(db, 'materials'), where('customerId', 'in', [profile.customerId, 'all']));
+      // Handle both old 'customerId' and new 'customerIds'
+      q = query(
+        collection(db, 'materials'), 
+        or(
+          where('customerId', '==', profile.customerId),
+          where('customerId', '==', 'all'),
+          where('customerIds', 'array-contains', profile.customerId),
+          where('customerIds', 'array-contains', 'all')
+        )
+      );
     }
 
     const unsubMaterials = onSnapshot(q, (snapshot) => {
@@ -70,11 +79,13 @@ export const MaterialsPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (formData.customerIds.length === 0) return;
     setSubmitting(true);
     try {
       const data = {
         ...formData,
-        customerId: isAdmin ? formData.customerId : profile?.customerId,
+        // For backward compatibility, set customerId to the first one if it's 'all' or just the first ID
+        customerId: formData.customerIds.includes('all') ? 'all' : (formData.customerIds[0] || ''),
         updatedAt: serverTimestamp()
       };
 
@@ -110,7 +121,11 @@ export const MaterialsPage: React.FC = () => {
     const matchesSearch = m.title.toLowerCase().includes(searchTerm.toLowerCase());
     // If a customer is selected, show that customer's materials AND global materials
     const matchesCustomer = selectedCustomer 
-      ? (m.customerId === selectedCustomer || m.customerId === 'all') 
+      ? (
+          m.customerId === selectedCustomer || 
+          m.customerId === 'all' || 
+          (m.customerIds && (m.customerIds.includes(selectedCustomer) || m.customerIds.includes('all')))
+        ) 
       : true;
     const matchesTopic = selectedTopic ? m.topic === selectedTopic : true;
     return matchesSearch && matchesCustomer && matchesTopic;
@@ -136,7 +151,14 @@ export const MaterialsPage: React.FC = () => {
           <button
             onClick={() => {
               setEditingMaterial(null);
-              setFormData({ title: '', type: 'pdf', url: '', coverUrl: '', customerId: '', topic: 'Geral' });
+              setFormData({ 
+                title: '', 
+                type: 'pdf', 
+                url: '', 
+                coverUrl: '', 
+                customerIds: isAdmin ? [] : [profile?.customerId || ''], 
+                topic: 'Geral' 
+              });
               setShowNewTopicInput(false);
               setNewTopic('');
               setIsModalOpen(true);
@@ -252,7 +274,7 @@ export const MaterialsPage: React.FC = () => {
                                   type: material.type,
                                   url: material.url,
                                   coverUrl: material.coverUrl || '',
-                                  customerId: material.customerId,
+                                  customerIds: material.customerIds || (material.customerId ? [material.customerId] : []),
                                   topic: material.topic || 'Geral'
                                 });
                                 setShowNewTopicInput(false);
@@ -274,7 +296,12 @@ export const MaterialsPage: React.FC = () => {
                       <div className="flex items-center gap-2 mb-4">
                         {isAdmin && (
                           <span className="text-[10px] text-gray-400 font-medium truncate">
-                            {material.customerId === 'all' ? 'Todos os Clientes' : customers.find(c => c.id === material.customerId)?.name}
+                            {material.customerIds?.includes('all') || material.customerId === 'all' 
+                              ? 'Todos os Clientes' 
+                              : (material.customerIds && material.customerIds.length > 1) 
+                                ? `${material.customerIds.length} Clientes`
+                                : customers.find(c => c.id === (material.customerIds?.[0] || material.customerId))?.name
+                            }
                           </span>
                         )}
                       </div>
@@ -423,17 +450,44 @@ export const MaterialsPage: React.FC = () => {
                 </div>
                 {isAdmin && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Cliente</label>
-                    <select
-                      required
-                      value={formData.customerId}
-                      onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
-                    >
-                      <option value="">Selecionar...</option>
-                      <option value="all">Todos os Clientes</option>
-                      {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Clientes</label>
+                    <div className="border border-gray-300 rounded-lg p-3 max-h-48 overflow-y-auto space-y-2">
+                      <label className="flex items-center gap-2 p-1 hover:bg-gray-50 rounded cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.customerIds.includes('all')}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setFormData({ ...formData, customerIds: ['all'] });
+                            } else {
+                              setFormData({ ...formData, customerIds: [] });
+                            }
+                          }}
+                          className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary"
+                        />
+                        <span className="text-sm font-medium text-gray-900">Todos os Clientes</span>
+                      </label>
+                      
+                      {!formData.customerIds.includes('all') && customers.map(c => (
+                        <label key={c.id} className="flex items-center gap-2 p-1 hover:bg-gray-50 rounded cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.customerIds.includes(c.id)}
+                            onChange={(e) => {
+                              const newIds = e.target.checked
+                                ? [...formData.customerIds, c.id]
+                                : formData.customerIds.filter(id => id !== c.id);
+                              setFormData({ ...formData, customerIds: newIds });
+                            }}
+                            className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary"
+                          />
+                          <span className="text-sm text-gray-700">{c.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {formData.customerIds.length === 0 && (
+                      <p className="text-xs text-red-500 mt-1">Selecione pelo menos um cliente ou "Todos".</p>
+                    )}
                   </div>
                 )}
                 <div className="flex gap-3 pt-4">
