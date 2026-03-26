@@ -33,6 +33,8 @@ export const AgendaPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState('');
+  const [selectedResponsible, setSelectedResponsible] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMeeting, setEditingMeeting] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -45,7 +47,8 @@ export const AgendaPage: React.FC = () => {
     customerId: '',
     responsibleId: '',
     status: 'pending',
-    notes: ''
+    notes: '',
+    products: [] as string[]
   });
 
   useEffect(() => {
@@ -156,7 +159,9 @@ export const AgendaPage: React.FC = () => {
   const filteredMeetings = meetings.filter(m => {
     const matchesSearch = m.title.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCustomer = selectedCustomer ? m.customerId === selectedCustomer : true;
-    return matchesSearch && matchesCustomer;
+    const matchesResponsible = selectedResponsible ? m.responsibleId === selectedResponsible : true;
+    const matchesProduct = selectedProduct ? m.products?.includes(selectedProduct) : true;
+    return matchesSearch && matchesCustomer && matchesResponsible && matchesProduct;
   }).sort((a, b) => {
     const dateA = new Date(`${a.date}T${a.time || '00:00'}`).getTime();
     const dateB = new Date(`${b.date}T${b.time || '00:00'}`).getTime();
@@ -174,7 +179,7 @@ export const AgendaPage: React.FC = () => {
           <button
             onClick={() => {
               setEditingMeeting(null);
-              setFormData({ title: '', date: '', time: '', link: '', customerId: '', responsibleId: '', status: 'pending', notes: '' });
+              setFormData({ title: '', date: '', time: '', link: '', customerId: '', responsibleId: '', status: 'pending', notes: '', products: [] });
               setIsModalOpen(true);
             }}
             className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-xl flex items-center gap-2 transition-colors font-semibold"
@@ -185,29 +190,75 @@ export const AgendaPage: React.FC = () => {
         )}
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4 items-center bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-        <div className="relative flex-1 w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <input
-            type="text"
-            placeholder="Buscar reuniões..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
-          />
-        </div>
-        {(isAdmin || profile?.role === 'GESTOR') && (
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <Filter className="w-5 h-5 text-gray-400" />
-            <SearchableSelect
-              className="w-full md:w-48"
-              options={customers}
-              value={selectedCustomer}
-              onChange={(val) => setSelectedCustomer(val)}
-              placeholder="Todos os Clientes"
+      <div className="flex flex-col gap-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="flex flex-col md:flex-row gap-4 items-center w-full">
+          <div className="relative flex-1 w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Buscar reuniões..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
             />
           </div>
-        )}
+          {(isAdmin || profile?.role === 'GESTOR') && (
+            <div className="flex items-center gap-2 w-full md:w-auto">
+              <Filter className="w-5 h-5 text-gray-400" />
+              <SearchableSelect
+                className="w-full md:w-48"
+                options={customers}
+                value={selectedCustomer}
+                onChange={(val) => setSelectedCustomer(val)}
+                placeholder="Todos os Clientes"
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-wrap gap-4 items-center border-t border-gray-50 pt-4">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Responsável:</span>
+            <select
+              value={selectedResponsible}
+              onChange={(e) => setSelectedResponsible(e.target.value)}
+              className="text-sm px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+            >
+              <option value="">Todos</option>
+              {users.filter(u => u.role === 'ADMIN' || u.role === 'GESTOR').map(u => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Produto:</span>
+            <select
+              value={selectedProduct}
+              onChange={(e) => setSelectedProduct(e.target.value)}
+              className="text-sm px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary outline-none"
+            >
+              <option value="">Todos</option>
+              {['Sittax', 'Openix', 'Recupera', 'ST'].map(p => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+          </div>
+
+          {(selectedCustomer || selectedResponsible || selectedProduct) && (
+            <button
+              onClick={() => {
+                setSelectedCustomer('');
+                setSelectedResponsible('');
+                setSelectedProduct('');
+                setSearchTerm('');
+              }}
+              className="text-xs font-bold text-primary hover:underline ml-auto"
+            >
+              Limpar Filtros
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -257,7 +308,8 @@ export const AgendaPage: React.FC = () => {
                           customerId: meeting.customerId,
                           responsibleId: meeting.responsibleId || '',
                           status: meeting.status || 'pending',
-                          notes: meeting.notes || ''
+                          notes: meeting.notes || '',
+                          products: meeting.products || []
                         });
                         setIsModalOpen(true);
                       }}
@@ -291,6 +343,15 @@ export const AgendaPage: React.FC = () => {
                   <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
                     <UserCircle className="w-4 h-4 text-primary" />
                     {users.find(u => u.id === meeting.responsibleId)?.name || 'Responsável não encontrado'}
+                  </div>
+                )}
+                {meeting.products && meeting.products.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {meeting.products.map((p: string) => (
+                      <span key={p} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] font-medium">
+                        {p}
+                      </span>
+                    ))}
                   </div>
                 )}
                 {isAdmin && (
@@ -353,31 +414,31 @@ export const AgendaPage: React.FC = () => {
                 </button>
               </div>
               <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Título</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Responsável pela Execução</label>
-                  <select
-                    required
-                    value={formData.responsibleId}
-                    onChange={(e) => setFormData({ ...formData, responsibleId: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
-                  >
-                    <option value="">Selecionar Responsável...</option>
-                    {users.filter(u => u.role === 'ADMIN' || u.role === 'GESTOR').map(u => (
-                      <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Título</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Responsável pela Execução</label>
+                    <select
+                      required
+                      value={formData.responsibleId}
+                      onChange={(e) => setFormData({ ...formData, responsibleId: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                    >
+                      <option value="">Selecionar Responsável...</option>
+                      {users.filter(u => u.role === 'ADMIN' || u.role === 'GESTOR').map(u => (
+                        <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+                      ))}
+                    </select>
+                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Data</label>
                     <input
@@ -398,49 +459,70 @@ export const AgendaPage: React.FC = () => {
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
                     />
                   </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Link da Reunião</label>
-                  <input
-                    type="url"
-                    value={formData.link}
-                    onChange={(e) => setFormData({ ...formData, link: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
-                    placeholder="https://meet.google.com/..."
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">O que foi tratado</label>
-                  <textarea
-                    rows={3}
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none resize-none"
-                    placeholder="Resumo da reunião..."
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="status"
-                    checked={formData.status === 'completed'}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.checked ? 'completed' : 'pending' })}
-                    className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
-                  />
-                  <label htmlFor="status" className="text-sm font-medium text-gray-700">Reunião Concluída</label>
-                </div>
-                {isAdmin && (
                   <div className="md:col-span-2">
-                    <SearchableSelect
-                      label="Cliente"
-                      required
-                      options={customers}
-                      value={formData.customerId}
-                      onChange={(val) => setFormData({ ...formData, customerId: val })}
-                      placeholder="Selecionar cliente..."
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Link da Reunião</label>
+                    <input
+                      type="url"
+                      value={formData.link}
+                      onChange={(e) => setFormData({ ...formData, link: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                      placeholder="https://meet.google.com/..."
                     />
                   </div>
-                )}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">O que foi tratado</label>
+                    <textarea
+                      rows={3}
+                      value={formData.notes}
+                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none resize-none"
+                      placeholder="Resumo da reunião..."
+                    />
+                  </div>
+                  <div className="md:col-span-2 flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="status"
+                      checked={formData.status === 'completed'}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.checked ? 'completed' : 'pending' })}
+                      className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+                    />
+                    <label htmlFor="status" className="text-sm font-medium text-gray-700">Reunião Concluída</label>
+                  </div>
+                  {isAdmin && (
+                    <div className="md:col-span-2">
+                      <SearchableSelect
+                        label="Cliente"
+                        required
+                        options={customers}
+                        value={formData.customerId}
+                        onChange={(val) => setFormData({ ...formData, customerId: val })}
+                        placeholder="Selecionar cliente..."
+                      />
+                    </div>
+                  )}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Produtos</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {['Sittax', 'Openix', 'Recupera', 'ST'].map(product => (
+                        <label key={product} className="flex items-center gap-2 p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={formData.products.includes(product)}
+                            onChange={(e) => {
+                              const newProducts = e.target.checked
+                                ? [...formData.products, product]
+                                : formData.products.filter(p => p !== product);
+                              setFormData({ ...formData, products: newProducts });
+                            }}
+                            className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+                          />
+                          <span className="text-sm text-gray-700">{product}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
                 <div className="flex gap-3 pt-4">
                   <button
                     type="button"
