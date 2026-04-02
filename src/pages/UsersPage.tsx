@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { collection, onSnapshot, query, where, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { db, auth, secondaryAuth } from '../firebase';
 import { createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from 'firebase/auth';
-import { Users, Plus, Search, Edit2, Trash2, X, Loader2, UserCircle, Mail } from 'lucide-react';
+import { Users, Plus, Search, Edit2, Trash2, X, Loader2, UserCircle, Mail, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { SearchableSelect } from '../components/SearchableSelect';
@@ -20,6 +20,7 @@ export const UsersPage: React.FC = () => {
   const [editingUser, setEditingUser] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -42,9 +43,18 @@ export const UsersPage: React.FC = () => {
     const unsubCustomers = onSnapshot(collection(db, 'customers'), (snapshot) => {
       setCustomers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement).closest('.customer-dropdown')) {
+        setExpandedUserId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+
     return () => {
       unsubUsers();
       unsubCustomers();
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
 
@@ -193,9 +203,40 @@ export const UsersPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
                       {user.role === 'ADMIN' ? '-' : (
-                        user.role === 'GESTOR' 
-                          ? (customers.filter(c => c.responsibleAdminId === user.id).map(c => c.name).join(', ') || 'Não vinculado')
-                          : (customers.find(c => c.id === user.customerId)?.name || 'Não vinculado')
+                        user.role === 'GESTOR' ? (
+                          (() => {
+                            const linkedCustomers = customers.filter(c => c.responsibleAdminId === user.id);
+                            if (linkedCustomers.length === 0) return 'Não vinculado';
+                            if (linkedCustomers.length === 1) return linkedCustomers[0].name;
+                            
+                            return (
+                              <div className="relative customer-dropdown">
+                                <button 
+                                  onClick={() => setExpandedUserId(expandedUserId === user.id ? null : user.id)}
+                                  className="text-primary hover:text-primary-hover font-bold flex items-center gap-1 bg-primary/5 px-2 py-1 rounded-lg transition-colors"
+                                >
+                                  {linkedCustomers.length} Clientes
+                                  <ChevronDown className={`w-3 h-3 transition-transform ${expandedUserId === user.id ? 'rotate-180' : ''}`} />
+                                </button>
+                                {expandedUserId === user.id && (
+                                  <div className="absolute z-20 left-0 mt-1 w-72 bg-white border border-gray-200 rounded-xl shadow-2xl p-2 max-h-64 overflow-y-auto animate-in fade-in zoom-in duration-200">
+                                    <div className="px-2 py-1.5 mb-1 border-b border-gray-50">
+                                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Clientes na Carteira</p>
+                                    </div>
+                                    {linkedCustomers.map(c => (
+                                      <div key={c.id} className="py-2 px-3 hover:bg-gray-50 rounded-lg text-xs text-gray-700 flex flex-col gap-0.5">
+                                        <span className="font-semibold">{c.name}</span>
+                                        {c.cnpj && <span className="text-[10px] text-gray-400">{c.cnpj}</span>}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()
+                        ) : (
+                          customers.find(c => c.id === user.customerId)?.name || 'Não vinculado'
+                        )
                       )}
                     </td>
                     <td className="px-6 py-4 text-right">
