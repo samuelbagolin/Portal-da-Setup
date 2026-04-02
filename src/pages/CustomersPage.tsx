@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { Building2, Plus, Search, Edit2, Trash2, X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { SearchableSelect } from '../components/SearchableSelect';
 
 export const CustomersPage: React.FC = () => {
   const [customers, setCustomers] = useState<any[]>([]);
@@ -191,7 +192,7 @@ export const CustomersPage: React.FC = () => {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+              className="bg-white rounded-2xl shadow-xl w-full max-w-md"
             >
               <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -245,17 +246,13 @@ export const CustomersPage: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Responsável</label>
-                  <select
+                  <SearchableSelect
+                    label="Responsável"
+                    options={[{ id: '', name: 'Nenhum' }, ...admins]}
                     value={formData.responsibleAdminId}
-                    onChange={(e) => setFormData({ ...formData, responsibleAdminId: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
-                  >
-                    <option value="">Nenhum</option>
-                    {admins.map(admin => (
-                      <option key={admin.id} value={admin.id}>{admin.name}</option>
-                    ))}
-                  </select>
+                    onChange={(val) => setFormData({ ...formData, responsibleAdminId: val })}
+                    placeholder="Selecionar responsável..."
+                  />
                 </div>
                 <div className="flex gap-3 pt-4">
                   <button
