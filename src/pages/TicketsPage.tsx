@@ -739,20 +739,15 @@ export const TicketsPage: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Responsável</label>
-                    <select
-                      required
-                      value={formData.responsible}
-                      onChange={(e) => setFormData({ ...formData, responsible: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
-                    >
-                      <option value="">Selecionar...</option>
-                      {admins.map(admin => (
-                        <option key={admin.id} value={admin.name}>{admin.name}</option>
-                      ))}
-                    </select>
-                  </div>
+                  <SearchableSelect
+                    label="Responsável"
+                    required
+                    options={admins.map(a => ({ id: a.name, name: a.name }))}
+                    value={formData.responsible}
+                    onChange={(val) => setFormData({ ...formData, responsible: val })}
+                    placeholder="Selecionar responsável..."
+                    searchPlaceholder="Buscar responsável..."
+                  />
                   {isAdmin && (
                     <div className="md:col-span-2">
                       <SearchableSelect

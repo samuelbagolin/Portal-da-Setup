@@ -12,6 +12,7 @@ interface SearchableSelectProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  searchPlaceholder?: string;
   label?: string;
   required?: boolean;
   className?: string;
@@ -22,6 +23,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   value,
   onChange,
   placeholder = 'Selecionar...',
+  searchPlaceholder = 'Buscar...',
   label,
   required = false,
   className = ''
@@ -75,7 +77,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
               <input
                 autoFocus
                 type="text"
-                placeholder="Buscar cliente..."
+                placeholder={searchPlaceholder}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 text-sm bg-white border border-gray-200 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
