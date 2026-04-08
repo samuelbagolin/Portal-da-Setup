@@ -32,7 +32,8 @@ export const UsersPage: React.FC = () => {
   const roles = [
     { id: 'CLIENTE', label: 'CLIENTE' },
     { id: 'ADMIN', label: 'ADMIN' },
-    { id: 'GESTOR', label: 'Gestor da Carteira' }
+    { id: 'GESTOR', label: 'Gestor da Carteira' },
+    { id: 'SUPORTE', label: 'Suporte' }
   ].filter(role => !isGestor || role.id === 'CLIENTE');
 
   useEffect(() => {

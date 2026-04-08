@@ -54,9 +54,14 @@ export const AgendaPage: React.FC = () => {
   useEffect(() => {
     if (!profile) return;
 
-    let q = query(collection(db, 'meetings'));
-    if (!isAdmin && profile.customerId) {
+    let q;
+    if (isAdmin) {
+      q = query(collection(db, 'meetings'));
+    } else if (profile.customerId) {
       q = query(collection(db, 'meetings'), where('customerId', '==', profile.customerId));
+    } else {
+      // If not admin and no customerId, return nothing
+      q = query(collection(db, 'meetings'), where('customerId', '==', 'none'));
     }
 
     const unsubMeetings = onSnapshot(q, (snapshot) => {

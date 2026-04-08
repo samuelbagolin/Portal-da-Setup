@@ -8,7 +8,7 @@ interface UserProfile {
   uid: string;
   name: string;
   email: string;
-  role: 'ADMIN' | 'CLIENTE' | 'GESTOR';
+  role: 'ADMIN' | 'CLIENTE' | 'GESTOR' | 'SUPORTE';
   customerId?: string;
   photoUrl?: string;
 }
@@ -71,7 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  const isAdmin = profile?.role === 'ADMIN' || profile?.role === 'GESTOR' || user?.email === 'samuel.bagolin@setuptecnologia.com.br';
+  const isAdmin = profile?.role === 'ADMIN' || profile?.role === 'GESTOR' || profile?.role === 'SUPORTE' || user?.email === 'samuel.bagolin@setuptecnologia.com.br';
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, isAdmin }}>

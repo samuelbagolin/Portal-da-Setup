@@ -49,8 +49,10 @@ export const MaterialsPage: React.FC = () => {
   useEffect(() => {
     if (!profile) return;
 
-    let q = query(collection(db, 'materials'));
-    if (!isAdmin && profile.customerId) {
+    let q;
+    if (isAdmin) {
+      q = query(collection(db, 'materials'));
+    } else if (profile.customerId) {
       // Clients see their own materials OR materials for "all"
       // Handle both old 'customerId' and new 'customerIds'
       q = query(
@@ -62,6 +64,9 @@ export const MaterialsPage: React.FC = () => {
           where('customerIds', 'array-contains', 'all')
         )
       );
+    } else {
+      // If not admin and no customerId, return nothing
+      q = query(collection(db, 'materials'), where('customerId', '==', 'none'));
     }
 
     const unsubMaterials = onSnapshot(q, (snapshot) => {

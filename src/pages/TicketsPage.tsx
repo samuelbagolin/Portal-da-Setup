@@ -27,6 +27,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 const STATUS_COLUMNS = [
+  { id: 'pending', label: 'Pendente', color: 'bg-gray-50 text-gray-600 border-gray-100' },
   { id: 'todo', label: 'A Fazer', color: 'bg-orange-50 text-orange-600 border-orange-100' },
   { id: 'in-progress', label: 'Em Andamento', color: 'bg-blue-50 text-blue-600 border-blue-100' },
   { id: 'done', label: 'Concluído', color: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
@@ -57,7 +58,10 @@ export const TicketsPage: React.FC = () => {
     customerId: '',
     tag: 'Melhoria',
     errorImageUrl: '',
-    products: [] as string[]
+    products: [] as string[],
+    companyCnpj: '',
+    officeCnpj: '',
+    calculationPeriod: ''
   });
   const [showNewTagInput, setShowNewTagInput] = useState(false);
   const [newTag, setNewTag] = useState('');
@@ -76,9 +80,14 @@ export const TicketsPage: React.FC = () => {
   useEffect(() => {
     if (!profile) return;
 
-    let q = query(collection(db, 'tickets'));
-    if (!isAdmin && profile.customerId) {
+    let q;
+    if (isAdmin) {
+      q = query(collection(db, 'tickets'));
+    } else if (profile.customerId) {
       q = query(collection(db, 'tickets'), where('customerId', '==', profile.customerId));
+    } else {
+      // If not admin and no customerId, return nothing
+      q = query(collection(db, 'tickets'), where('customerId', '==', 'none'));
     }
 
     const unsubTickets = onSnapshot(q, (snapshot) => {
@@ -189,8 +198,10 @@ export const TicketsPage: React.FC = () => {
     e.preventDefault();
     setSubmitting(true);
     try {
+      const initialStatus = !editingTicket && profile?.role === 'GESTOR' ? 'pending' : formData.status;
       const data = {
         ...formData,
+        status: initialStatus,
         tag: showNewTagInput ? newTag : formData.tag,
         customerId: isAdmin ? formData.customerId : profile?.customerId,
         updatedAt: serverTimestamp()
@@ -267,7 +278,20 @@ export const TicketsPage: React.FC = () => {
             <button
               onClick={() => {
                 setEditingTicket(null);
-                setFormData({ title: '', description: '', status: 'todo', deadline: '', responsible: '', customerId: '', tag: 'Melhoria', errorImageUrl: '', products: [] });
+                setFormData({ 
+                  title: '', 
+                  description: '', 
+                  status: profile?.role === 'GESTOR' ? 'pending' : 'todo', 
+                  deadline: '', 
+                  responsible: '', 
+                  customerId: '', 
+                  tag: 'Melhoria', 
+                  errorImageUrl: '', 
+                  products: [],
+                  companyCnpj: '',
+                  officeCnpj: '',
+                  calculationPeriod: ''
+                });
                 setShowNewTagInput(false);
                 setNewTag('');
                 setIsModalOpen(true);
@@ -374,8 +398,8 @@ export const TicketsPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {STATUS_COLUMNS.map((column) => (
+      <div className={`grid grid-cols-1 md:grid-cols-2 ${profile?.role === 'CLIENTE' ? 'xl:grid-cols-3' : 'xl:grid-cols-4'} gap-6`}>
+        {STATUS_COLUMNS.filter(col => profile?.role !== 'CLIENTE' || col.id !== 'pending').map((column) => (
           <div key={column.id} className="flex flex-col gap-4">
             <div className={`flex items-center justify-between p-3 rounded-xl border ${column.color}`}>
               <span className="font-bold text-sm uppercase tracking-wider">{column.label}</span>
@@ -425,7 +449,10 @@ export const TicketsPage: React.FC = () => {
                                 customerId: ticket.customerId,
                                 tag: ticket.tag || 'Melhoria',
                                 errorImageUrl: ticket.errorImageUrl || '',
-                                products: ticket.products || []
+                                products: ticket.products || [],
+                                companyCnpj: ticket.companyCnpj || '',
+                                officeCnpj: ticket.officeCnpj || '',
+                                calculationPeriod: ticket.calculationPeriod || ''
                               });
                               setShowNewTagInput(false);
                               setNewTag('');
@@ -505,7 +532,7 @@ export const TicketsPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {isAdmin && (
+                  { (profile?.role === 'SUPORTE' || profile?.role === 'ADMIN') && (
                     <div className="mt-4 pt-4 border-t border-gray-50 flex gap-2">
                       {STATUS_COLUMNS.filter(c => c.id !== ticket.status).map(c => (
                         <button
@@ -603,6 +630,22 @@ export const TicketsPage: React.FC = () => {
                       {customers.find(c => c.id === viewingTicket.customerId)?.name || 'N/A'}
                     </p>
                   </div>
+                  {profile?.role !== 'CLIENTE' && (
+                    <>
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase">CNPJ da Empresa</p>
+                        <p className="text-sm font-semibold text-gray-900">{viewingTicket.companyCnpj || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase">CNPJ do Escritório</p>
+                        <p className="text-sm font-semibold text-gray-900">{viewingTicket.officeCnpj || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase">Período de Apuração</p>
+                        <p className="text-sm font-semibold text-gray-900">{viewingTicket.calculationPeriod || 'N/A'}</p>
+                      </div>
+                    </>
+                  )}
                   {viewingTicket.products && viewingTicket.products.length > 0 && (
                     <div className="col-span-2 sm:col-span-4">
                       <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Produtos</p>
@@ -680,16 +723,54 @@ export const TicketsPage: React.FC = () => {
                       />
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <select
-                      value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
-                    >
-                      {STATUS_COLUMNS.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
-                    </select>
-                  </div>
+                  {profile?.role !== 'CLIENTE' && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">CNPJ da Empresa</label>
+                        <input
+                          type="text"
+                          value={formData.companyCnpj}
+                          onChange={(e) => setFormData({ ...formData, companyCnpj: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                          placeholder="00.000.000/0000-00"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">CNPJ do Escritório</label>
+                        <input
+                          type="text"
+                          value={formData.officeCnpj}
+                          onChange={(e) => setFormData({ ...formData, officeCnpj: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                          placeholder="00.000.000/0000-00"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Período de Apuração</label>
+                        <input
+                          type="text"
+                          value={formData.calculationPeriod}
+                          onChange={(e) => setFormData({ ...formData, calculationPeriod: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                          placeholder="MM/AAAA"
+                        />
+                      </div>
+                    </>
+                  )}
+                  {(profile?.role === 'ADMIN' || profile?.role === 'SUPORTE') && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                      <select
+                        value={formData.status}
+                        onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                      >
+                        {STATUS_COLUMNS.map(c => (
+                          <option key={c.id} value={c.id}>{c.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Prazo</label>
                     <input
