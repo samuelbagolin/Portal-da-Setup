@@ -32,7 +32,7 @@ export default function App() {
               <Route path="/profile" element={<ProfilePage />} />
               
               {/* Admin/Gestor Routes */}
-              <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'GESTOR']} />}>
+              <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'GESTOR', 'SUPORTE']} />}>
                 <Route path="/customers" element={<CustomersPage />} />
                 <Route path="/users" element={<UsersPage />} />
               </Route>

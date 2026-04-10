@@ -88,7 +88,7 @@ export const Sidebar: React.FC = () => {
     { to: '/profile', icon: UserCircle, label: 'Perfil' },
   ];
 
-  const links = profile?.role === 'ADMIN' ? adminLinks : (profile?.role === 'GESTOR' ? gestorLinks : clientLinks);
+  const links = (profile?.role === 'ADMIN' || profile?.role === 'SUPORTE') ? adminLinks : (profile?.role === 'GESTOR' ? gestorLinks : clientLinks);
 
   return (
     <>
@@ -161,6 +161,7 @@ export const Sidebar: React.FC = () => {
                   <p className="text-xs text-gray-500 truncate">
                     {profile?.role === 'ADMIN' ? 'Administrador' : 
                      profile?.role === 'GESTOR' ? 'Gestor da Carteira' : 
+                     profile?.role === 'SUPORTE' ? 'Suporte' :
                      'Cliente'}
                   </p>
                 </div>
